@@ -1,0 +1,206 @@
+@import "98.css";
+
+/* Reset e configurazione base desktop Windows 98 */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background-color: #008080; /* Teal classico di Windows 98 */
+  font-family: "MS Sans Serif", Arial, sans-serif;
+  font-size: 11px;
+  user-select: none;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+/* Finestra principale a tutto schermo */
+.main-window {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.window-body-custom {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 4px;
+  overflow: hidden;
+}
+
+/* Menu bar stile Win98 */
+.menu-bar {
+  display: flex;
+  gap: 12px;
+  padding: 2px 6px;
+  background-color: #c0c0c0;
+  border-bottom: 1px solid #808080;
+  margin-bottom: 4px;
+}
+
+.menu-item {
+  cursor: pointer;
+  padding: 1px 4px;
+}
+
+.menu-item:hover {
+  background-color: #000080;
+  color: #ffffff;
+}
+
+/* Toolbar dei comandi rapidi */
+.command-bar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 6px;
+  background-color: #c0c0c0;
+  border: 1px solid #808080;
+  border-top-color: #ffffff;
+  border-left-color: #ffffff;
+  margin-bottom: 6px;
+}
+
+/* Area principale divisa in pannelli */
+.workspace-split {
+  flex: 1;
+  display: flex;
+  gap: 6px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.left-pane {
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.right-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* TreeView personalizzata per 98.css */
+.tree-container {
+  flex: 1;
+  overflow-y: auto;
+  background-color: #ffffff;
+  border: 2px inset #dfdfdf;
+  padding: 4px;
+  font-family: "MS Sans Serif", Arial, sans-serif;
+  font-size: 11px;
+}
+
+.tree-node {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tree-node:hover {
+  background-color: #e0e0e0;
+}
+
+.tree-node.selected {
+  background-color: #000080;
+  color: #ffffff;
+}
+
+/* Area editor / codice decompilato */
+.code-viewer-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.code-viewer {
+  flex: 1;
+  overflow: auto;
+  background-color: #ffffff;
+  border: 2px inset #dfdfdf;
+  padding: 8px;
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: pre;
+  color: #000000;
+  user-select: text;
+}
+
+/* Badge di classificazione (senza emoji) */
+.badge-kind {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: bold;
+  padding: 1px 3px;
+  border: 1px solid #000000;
+  background-color: #ffffff;
+  color: #000000;
+  margin-right: 4px;
+}
+
+.badge-class {
+  background-color: #000080;
+  color: #ffffff;
+  border-color: #000080;
+}
+
+.badge-interface {
+  background-color: #008000;
+  color: #ffffff;
+  border-color: #008000;
+}
+
+.badge-struct {
+  background-color: #800080;
+  color: #ffffff;
+  border-color: #800080;
+}
+
+.badge-enum {
+  background-color: #808000;
+  color: #ffffff;
+  border-color: #808000;
+}
+
+/* Dialog di apertura file o percorso */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dialog-window {
+  width: 520px;
+}
+
+/* Status bar */
+.status-bar-container {
+  margin-top: 4px;
+}

@@ -1,0 +1,74 @@
+# ==============================================================================
+# .NET Archaeologist - .gitignore
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# .NET / C#
+# ------------------------------------------------------------------------------
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+.idea/
+*.DotSettings.user
+_ReSharper*/
+
+# Risultati di test e coverage
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+# ------------------------------------------------------------------------------
+# Node.js / Frontend (React + Vite)
+# ------------------------------------------------------------------------------
+node_modules/
+dist/
+dist-ssr/
+*.local
+.vite/
+
+# File di ambiente e credenziali (Privacy-first)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+
+# ------------------------------------------------------------------------------
+# Log e dump locali
+# ------------------------------------------------------------------------------
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.dmp
+*.crash
+
+# ------------------------------------------------------------------------------
+# File binari analizzati localmente (Non tracciare campioni o assembly nei commit)
+# ------------------------------------------------------------------------------
+artifacts/
+samples/
+*.dll
+*.exe
+*.pdb
+
+# ------------------------------------------------------------------------------
+# Sistema Operativo & IDE
+# ------------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json

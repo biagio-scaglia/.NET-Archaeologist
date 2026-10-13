@@ -97,7 +97,7 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
       const xSvc = 40 + colWidth + colGap
       let ySvc = 40
       solution.services.forEach(svc => {
-        const id = `svc-${svc.serviceName}`
+        const id = `svc-${svc.projectName}_${svc.serviceName}`
         const epItems = svc.endpoints.slice(0, 4).map(e => `[${e.httpMethodOrContract ?? 'ACTION'}] ${e.name}()`)
         nList.push({
           id,
@@ -119,7 +119,7 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
       const xDb = xSvc + colWidth + colGap
       let yDb = 40
       solution.databases.forEach(db => {
-        const id = `db-${db.name}`
+        const id = `db-${db.projectName}_${db.name}`
         const dbItems = [
           ...db.entitiesOrTables.slice(0, 3).map(t => `[TBL] ${t}`),
           ...db.detectedStoredProceduresOrQueries.slice(0, 2).map(p => `[PROC] ${p}`),
@@ -144,7 +144,7 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
       const xBatch = xDb + colWidth + colGap
       let yBatch = 40
       solution.batchWorkers.forEach(b => {
-        const id = `batch-${b.workerName}`
+        const id = `batch-${b.projectName}_${b.workerName}`
         nList.push({
           id,
           title: b.workerName,
@@ -166,13 +166,17 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
       webProjects.forEach(wp => {
         solution.services.forEach(svc => {
           if (
-            wp.projectReferences.includes(svc.projectName) ||
-            wp.name === svc.projectName ||
+            wp.projectReferences.some(pr =>
+              pr.toLowerCase() === svc.projectName.toLowerCase() ||
+              svc.projectName.toLowerCase().includes(pr.toLowerCase()) ||
+              pr.toLowerCase().includes(svc.projectName.toLowerCase())
+            ) ||
+            wp.name.toLowerCase() === svc.projectName.toLowerCase() ||
             svc.projectName.toLowerCase().includes('service')
           ) {
             eList.push({
               fromId: `web-${wp.name}`,
-              toId: `svc-${svc.serviceName}`,
+              toId: `svc-${svc.projectName}_${svc.serviceName}`,
               label: 'Invoca Servizio',
               style: 'dependency',
             })
@@ -182,17 +186,21 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
 
       // Servizi -> Database (collegamento solo in caso di dipendenza reale di progetto o modulo)
       solution.services.forEach(svc => {
-        const svcProject = solution.projects.find(p => p.name === svc.projectName)
+        const svcProject = solution.projects.find(p => p.name.toLowerCase() === svc.projectName.toLowerCase())
         solution.databases.forEach(db => {
           const isRelated =
-            svc.projectName === db.projectName ||
-            (svcProject?.projectReferences.includes(db.projectName) ?? false) ||
+            svc.projectName.toLowerCase() === db.projectName.toLowerCase() ||
+            (svcProject?.projectReferences.some(pr => {
+              const prL = pr.toLowerCase()
+              const dbProjL = db.projectName.toLowerCase()
+              return prL === dbProjL || prL.includes(dbProjL) || dbProjL.includes(prL)
+            }) ?? false) ||
             (svcProject?.projectReferences.some(pr => pr.toLowerCase().includes('data')) && db.projectName.toLowerCase().includes('data'))
 
           if (isRelated) {
             eList.push({
-              fromId: `svc-${svc.serviceName}`,
-              toId: `db-${db.name}`,
+              fromId: `svc-${svc.projectName}_${svc.serviceName}`,
+              toId: `db-${db.projectName}_${db.name}`,
               label: 'Persistenza / Query',
               style: 'data',
             })
@@ -202,17 +210,21 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
 
       // Batch -> Database (collegamento solo in caso di dipendenza reale o modulo)
       solution.batchWorkers.forEach(b => {
-        const batchProject = solution.projects.find(p => p.name === b.projectName)
+        const batchProject = solution.projects.find(p => p.name.toLowerCase() === b.projectName.toLowerCase())
         solution.databases.forEach(db => {
           const isRelated =
-            b.projectName === db.projectName ||
-            (batchProject?.projectReferences.includes(db.projectName) ?? false) ||
+            b.projectName.toLowerCase() === db.projectName.toLowerCase() ||
+            (batchProject?.projectReferences.some(pr => {
+              const prL = pr.toLowerCase()
+              const dbProjL = db.projectName.toLowerCase()
+              return prL === dbProjL || prL.includes(dbProjL) || dbProjL.includes(prL)
+            }) ?? false) ||
             (batchProject?.projectReferences.some(pr => pr.toLowerCase().includes('data')) && db.projectName.toLowerCase().includes('data'))
 
           if (isRelated) {
             eList.push({
-              fromId: `batch-${b.workerName}`,
-              toId: `db-${db.name}`,
+              fromId: `batch-${b.projectName}_${b.workerName}`,
+              toId: `db-${db.projectName}_${db.name}`,
               label: 'Accesso Dati',
               style: 'data',
             })
@@ -283,6 +295,19 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
     () => nodes.find(n => n.id === selectedNodeId) ?? null,
     [nodes, selectedNodeId]
   )
+
+  // Calcolo dinamico dell'area canvas in base alla posizione reale di TUTTI i nodi
+  const canvasBounds = useMemo(() => {
+    if (nodes.length === 0) {
+      return { width: 2200, height: 1600 }
+    }
+    const maxX = Math.max(...nodes.map(n => n.x + n.width))
+    const maxY = Math.max(...nodes.map(n => n.y + n.height))
+    return {
+      width: Math.max(maxX + 400, 2200),
+      height: Math.max(maxY + 400, 1600),
+    }
+  }, [nodes])
 
   const getCategoryColor = (cat: DiagramNode['category']) => {
     switch (cat) {
@@ -405,22 +430,29 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
             style={{
               transform: `scale(${zoom})`,
               transformOrigin: '0 0',
-              minWidth: '1800px',
-              minHeight: '1200px',
+              width: `${canvasBounds.width}px`,
+              height: `${canvasBounds.height}px`,
+              minWidth: `${canvasBounds.width}px`,
+              minHeight: `${canvasBounds.height}px`,
               position: 'relative',
               padding: '20px',
+              boxSizing: 'border-box',
             }}
           >
-            {/* SVG per le linee di collegamento tecniche */}
+            {/* SVG per le linee di collegamento tecniche a tutta estensione */}
             {edgeMode !== 'none' && (
               <svg
+                width={canvasBounds.width}
+                height={canvasBounds.height}
+                viewBox={`0 0 ${canvasBounds.width} ${canvasBounds.height}`}
                 style={{
                   position: 'absolute',
                   top: 0,
                   left: 0,
-                  width: '100%',
-                  height: '100%',
+                  width: `${canvasBounds.width}px`,
+                  height: `${canvasBounds.height}px`,
                   pointerEvents: 'none',
+                  overflow: 'visible',
                 }}
               >
                 <defs>

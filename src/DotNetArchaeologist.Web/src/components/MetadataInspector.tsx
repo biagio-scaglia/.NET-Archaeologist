@@ -3,9 +3,15 @@ import type { TypeInfo } from '../types/api'
 
 interface MetadataInspectorProps {
   typeInfo: TypeInfo | null
+  derivedTypes?: string[]
+  onSelectType?: (typeFullName: string) => void
 }
 
-export const MetadataInspector: React.FC<MetadataInspectorProps> = ({ typeInfo }) => {
+export const MetadataInspector: React.FC<MetadataInspectorProps> = ({
+  typeInfo,
+  derivedTypes = [],
+  onSelectType
+}) => {
   if (!typeInfo) {
     return (
       <div style={{ padding: 8, color: '#666', fontStyle: 'italic', fontSize: 11 }}>
@@ -41,10 +47,69 @@ export const MetadataInspector: React.FC<MetadataInspectorProps> = ({ typeInfo }
             ].filter(Boolean).join(', ') || 'Nessuno'}
           </span>
 
-          <strong>Tipo Base:</strong>
-          <span style={{ wordBreak: 'break-all' }}>{typeInfo.baseTypeFullName || 'Nessuno'}</span>
+          <strong>Tipo Base (Padre):</strong>
+          <span style={{ wordBreak: 'break-all' }}>
+            {typeInfo.baseTypeFullName ? (
+              onSelectType ? (
+                <button
+                  type="button"
+                  onClick={() => onSelectType(typeInfo.baseTypeFullName!)}
+                  style={{
+                    border: 'none',
+                    background: 'none',
+                    padding: 0,
+                    color: '#000080',
+                    textDecoration: 'underline',
+                    cursor: 'pointer',
+                    fontSize: 11
+                  }}
+                >
+                  [PADRE] {typeInfo.baseTypeFullName}
+                </button>
+              ) : (
+                typeInfo.baseTypeFullName
+              )
+            ) : (
+              'Nessuno (Object)'
+            )}
+          </span>
         </div>
       </fieldset>
+
+      {/* Classi Figlie & Implementazioni Derivate */}
+      {derivedTypes.length > 0 && (
+        <fieldset style={{ marginBottom: 8, backgroundColor: '#f5f7fa' }}>
+          <legend style={{ fontWeight: 'bold', color: '#000080' }}>
+            Classi Figlie & Tipi Derivati ({derivedTypes.length})
+          </legend>
+          <ul style={{ margin: 0, paddingLeft: 16 }}>
+            {derivedTypes.map(child => (
+              <li key={child} style={{ wordBreak: 'break-all', marginBottom: 2 }}>
+                {onSelectType ? (
+                  <button
+                    type="button"
+                    onClick={() => onSelectType(child)}
+                    style={{
+                      border: 'none',
+                      background: 'none',
+                      padding: 0,
+                      color: '#000080',
+                      textDecoration: 'underline',
+                      cursor: 'pointer',
+                      fontSize: 11,
+                      textAlign: 'left'
+                    }}
+                  >
+                    [FIGLIO] {child}
+                  </button>
+                ) : (
+                  <span>[FIGLIO] {child}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </fieldset>
+      )}
 
       {typeInfo.implementedInterfaces.length > 0 && (
         <fieldset style={{ marginBottom: 8 }}>

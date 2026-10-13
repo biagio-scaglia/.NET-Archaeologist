@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNetArchaeologist.Core.Contracts;
@@ -14,7 +17,8 @@ namespace DotNetArchaeologist.Analysis.Engines;
 
 /// <summary>
 /// Implementazione del motore di decompilazione C# basato su ICSharpCode.Decompiler (ILSpy).
-/// Esegue la decompilazione in memoria e in sicurezza, senza dipendenze native esterne e senza esecuzione del binario.
+/// Supporta .NET Framework 4.0, 4.5, 4.8 e .NET Moderno (Core / 8+).
+/// Garantisce tolleranza a referenze esterne mancanti e risoluzione sicura via MetadataToken.
 /// </summary>
 public sealed class CSharpDecompilerService : IDecompilerService
 {
@@ -46,21 +50,43 @@ public sealed class CSharpDecompilerService : IDecompilerService
         }
 
         using var peFile = new PEFile("analysis-target.dll", peStream, PEStreamOptions.LeaveOpen);
-        var resolver = new UniversalAssemblyResolver(null, throwOnError: false, targetFramework: null);
+        var resolver = CreateRobustAssemblyResolver(peFile);
         var decompiler = new CSharpDecompiler(peFile, resolver, DefaultSettings);
 
-        var fullTypeName = new FullTypeName(typeFullName);
-        var typeDefinition = decompiler.TypeSystem.FindType(fullTypeName).GetDefinition();
-
-        if (typeDefinition == null)
+        // Risoluzione prima via TypeDefinitionHandle diretto (robusto per tipi annidati e generici)
+        var typeHandle = FindTypeDefinitionHandle(peFile.Metadata, typeFullName);
+        if (!typeHandle.IsNil)
         {
-            throw new InvalidOperationException($"Il tipo specificato '{typeFullName}' non è stato trovato nei metadati dell'assembly.");
+            try
+            {
+                var code = decompiler.DecompileAsString(typeHandle);
+                return Task.FromResult(code);
+            }
+            catch (Exception ex)
+            {
+                return Task.FromResult(GenerateMetadataFallbackSource(peFile.Metadata, typeHandle, typeFullName, ex));
+            }
         }
 
-        cancellationToken.ThrowIfCancellationRequested();
+        // Tentativo secondario via TypeSystem e FullTypeName
+        try
+        {
+            var cleanTypeName = typeFullName.Replace('+', '/');
+            var fullTypeName = new FullTypeName(cleanTypeName);
+            var typeDefinition = decompiler.TypeSystem.FindType(fullTypeName).GetDefinition();
 
-        var output = decompiler.DecompileTypeAsString(fullTypeName);
-        return Task.FromResult(output);
+            if (typeDefinition != null)
+            {
+                var code = decompiler.DecompileTypeAsString(fullTypeName);
+                return Task.FromResult(code);
+            }
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult($"// Errore durante la decompilazione del tipo '{typeFullName}': {ex.Message}");
+        }
+
+        throw new InvalidOperationException($"Il tipo specificato '{typeFullName}' non è stato trovato nei metadati dell'assembly.");
     }
 
     public Task<string> DecompileMethodAsync(
@@ -81,28 +107,35 @@ public sealed class CSharpDecompilerService : IDecompilerService
         }
 
         using var peFile = new PEFile("analysis-target.dll", peStream, PEStreamOptions.LeaveOpen);
-        var resolver = new UniversalAssemblyResolver(null, throwOnError: false, targetFramework: null);
+        var resolver = CreateRobustAssemblyResolver(peFile);
         var decompiler = new CSharpDecompiler(peFile, resolver, DefaultSettings);
 
-        var fullTypeName = new FullTypeName(typeFullName);
-        var typeDefinition = decompiler.TypeSystem.FindType(fullTypeName).GetDefinition();
-
-        if (typeDefinition == null)
+        var typeHandle = FindTypeDefinitionHandle(peFile.Metadata, typeFullName);
+        if (!typeHandle.IsNil)
         {
-            throw new InvalidOperationException($"Il tipo specificato '{typeFullName}' non è stato trovato nei metadati dell'assembly.");
+            var typeDef = peFile.Metadata.GetTypeDefinition(typeHandle);
+            foreach (var methodHandle in typeDef.GetMethods())
+            {
+                var methodDef = peFile.Metadata.GetMethodDefinition(methodHandle);
+                var currentMethodName = peFile.Metadata.GetString(methodDef.Name);
+
+                if (currentMethodName.Equals(methodName, StringComparison.Ordinal))
+                {
+                    try
+                    {
+                        var code = decompiler.DecompileAsString(methodHandle);
+                        return Task.FromResult(code);
+                    }
+                    catch (Exception ex)
+                    {
+                        return Task.FromResult($"// Errore decompilazione metodo '{methodName}': {ex.Message}\n// Firma: {currentMethodName}");
+                    }
+                }
+            }
         }
 
-        var method = typeDefinition.Methods.FirstOrDefault(m => m.Name.Equals(methodName, StringComparison.Ordinal));
-        if (method == null)
-        {
-            throw new InvalidOperationException(
-                $"Il metodo '{methodName}' non è stato trovato all'interno del tipo '{typeFullName}'.");
-        }
-
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var output = decompiler.DecompileAsString(method.MetadataToken);
-        return Task.FromResult(output);
+        throw new InvalidOperationException(
+            $"Il metodo '{methodName}' non è stato trovato all'interno del tipo '{typeFullName}'.");
     }
 
     public Task<string> DecompileWholeAssemblyAsync(
@@ -119,12 +152,130 @@ public sealed class CSharpDecompilerService : IDecompilerService
         }
 
         using var peFile = new PEFile("analysis-target.dll", peStream, PEStreamOptions.LeaveOpen);
-        var resolver = new UniversalAssemblyResolver(null, throwOnError: false, targetFramework: null);
+        var resolver = CreateRobustAssemblyResolver(peFile);
         var decompiler = new CSharpDecompiler(peFile, resolver, DefaultSettings);
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        var output = decompiler.DecompileWholeModuleAsString();
-        return Task.FromResult(output);
+        try
+        {
+            var output = decompiler.DecompileWholeModuleAsString();
+            return Task.FromResult(output);
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult($"// Errore durante la decompilazione dell'intero modulo: {ex.Message}");
+        }
+    }
+
+    private static UniversalAssemblyResolver CreateRobustAssemblyResolver(PEFile peFile)
+    {
+        string? targetFramework = null;
+        try
+        {
+            targetFramework = peFile.DetectTargetFrameworkId();
+        }
+        catch
+        {
+            // Ignora fallimento su assembly non standard
+        }
+
+        var resolver = new UniversalAssemblyResolver(
+            mainAssemblyFileName: null,
+            throwOnError: false,
+            targetFramework: targetFramework);
+
+        // Aggiunge percorsi noti per .NET Framework 4.x legacy di Windows se presenti
+        var knownFrameworkPaths = new[]
+        {
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Microsoft.NET", "Framework", "v4.0.30319"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Microsoft.NET", "Framework64", "v4.0.30319"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Reference Assemblies", "Microsoft", "Framework", ".NETFramework", "v4.8"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Reference Assemblies", "Microsoft", "Framework", ".NETFramework", "v4.5"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Reference Assemblies", "Microsoft", "Framework", ".NETFramework", "v4.0")
+        };
+
+        foreach (var path in knownFrameworkPaths)
+        {
+            if (Directory.Exists(path))
+            {
+                try
+                {
+                    resolver.AddSearchDirectory(path);
+                }
+                catch
+                {
+                    // Ignora
+                }
+            }
+        }
+
+        return resolver;
+    }
+
+    private static TypeDefinitionHandle FindTypeDefinitionHandle(MetadataReader reader, string targetFullName)
+    {
+        // Normalizza sintassi nomi annidati (. e +)
+        var normalizedTarget = targetFullName.Replace('+', '.');
+
+        foreach (var handle in reader.TypeDefinitions)
+        {
+            var typeDef = reader.GetTypeDefinition(handle);
+            var name = reader.GetString(typeDef.Name);
+            var ns = reader.GetString(typeDef.Namespace);
+
+            var currentFullName = string.IsNullOrEmpty(ns) ? name : $"{ns}.{name}";
+            currentFullName = currentFullName.Replace('+', '.');
+
+            if (currentFullName.Equals(normalizedTarget, StringComparison.Ordinal) ||
+                name.Equals(targetFullName, StringComparison.Ordinal))
+            {
+                return handle;
+            }
+        }
+
+        return default;
+    }
+
+    private static string GenerateMetadataFallbackSource(
+        MetadataReader reader,
+        TypeDefinitionHandle handle,
+        string typeFullName,
+        Exception innerEx)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"// [AVVISO DECOMPILATORE] Decompilazione IL parziale: {innerEx.Message}");
+        sb.AppendLine($"// Ricostruzione della struttura del tipo dai metadati ECMA-335:");
+        sb.AppendLine();
+
+        var typeDef = reader.GetTypeDefinition(handle);
+        var name = reader.GetString(typeDef.Name);
+        var ns = reader.GetString(typeDef.Namespace);
+
+        if (!string.IsNullOrEmpty(ns))
+        {
+            sb.AppendLine($"namespace {ns}");
+            sb.AppendLine("{");
+        }
+
+        sb.AppendLine($"    // Definizione tipo: {name}");
+        sb.AppendLine($"    public class {name}");
+        sb.AppendLine("    {");
+
+        foreach (var mHandle in typeDef.GetMethods())
+        {
+            var mDef = reader.GetMethodDefinition(mHandle);
+            var mName = reader.GetString(mDef.Name);
+            sb.AppendLine($"        public void {mName}(); // Metodo rilevato nei metadati");
+        }
+
+        sb.AppendLine("    }");
+
+        if (!string.IsNullOrEmpty(ns))
+        {
+            sb.AppendLine("}");
+        }
+
+        return sb.ToString();
     }
 }

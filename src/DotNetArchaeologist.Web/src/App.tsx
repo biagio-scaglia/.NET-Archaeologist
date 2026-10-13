@@ -8,11 +8,12 @@ import { StatusBar } from './components/StatusBar'
 import { OpenDialog } from './components/OpenDialog'
 import { AboutDialog } from './components/AboutDialog'
 import { SolutionOverview } from './components/SolutionOverview'
+import { TechnicalDiagram } from './components/TechnicalDiagram'
 import type { AssemblyDescriptor, TreeNamespaceGroup, TypeInfo, SolutionDescriptor } from './types/api'
 
 export const App: React.FC = () => {
   const [solution, setSolution] = useState<SolutionDescriptor | null>(null)
-  const [viewMode, setViewMode] = useState<'solution' | 'assembly'>('solution')
+  const [viewMode, setViewMode] = useState<'solution' | 'diagram' | 'assembly'>('solution')
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [assembly, setAssembly] = useState<AssemblyDescriptor | null>(null)
   const [namespaces, setNamespaces] = useState<TreeNamespaceGroup[]>([])
@@ -29,6 +30,14 @@ export const App: React.FC = () => {
   const selectedTypeInfo = React.useMemo<TypeInfo | null>(() => {
     if (!assembly || !selectedTypeFullName) return null
     return assembly.types.find(t => t.fullName === selectedTypeFullName) || null
+  }, [assembly, selectedTypeFullName])
+
+  // Calcolo delle classi figlie e implementazioni derivate per il tipo selezionato
+  const derivedTypesForSelected = React.useMemo<string[]>(() => {
+    if (!assembly || !selectedTypeFullName) return []
+    return assembly.types
+      .filter(t => t.baseTypeFullName === selectedTypeFullName || t.implementedInterfaces.includes(selectedTypeFullName))
+      .map(t => t.fullName)
   }, [assembly, selectedTypeFullName])
 
   // Ispezione Solution (.sln) o cartella con mappatura architetturale
@@ -214,7 +223,7 @@ export const App: React.FC = () => {
           onAboutClick={() => setIsAboutOpen(true)}
         />
 
-        {solution && (
+        {(solution || assembly) && (
           <div
             style={{
               display: 'flex',
@@ -225,28 +234,44 @@ export const App: React.FC = () => {
               fontSize: 11
             }}
           >
+            {solution && (
+              <button
+                type="button"
+                style={{
+                  fontWeight: viewMode === 'solution' ? 'bold' : 'normal',
+                  backgroundColor: viewMode === 'solution' ? '#c0c0c0' : undefined,
+                  cursor: 'pointer'
+                }}
+                onClick={() => setViewMode('solution')}
+              >
+                [Mappa Sistema: {solution.name}]
+              </button>
+            )}
             <button
               type="button"
               style={{
-                fontWeight: viewMode === 'solution' ? 'bold' : 'normal',
-                backgroundColor: viewMode === 'solution' ? '#c0c0c0' : undefined,
+                fontWeight: viewMode === 'diagram' ? 'bold' : 'normal',
+                backgroundColor: viewMode === 'diagram' ? '#c0c0c0' : undefined,
+                color: '#000080',
                 cursor: 'pointer'
               }}
-              onClick={() => setViewMode('solution')}
+              onClick={() => setViewMode('diagram')}
             >
-              [Mappa Sistema: {solution.name}]
+              [Disegno Tecnico Architetturale (Blueprint)]
             </button>
-            <button
-              type="button"
-              style={{
-                fontWeight: viewMode === 'assembly' ? 'bold' : 'normal',
-                backgroundColor: viewMode === 'assembly' ? '#c0c0c0' : undefined,
-                cursor: 'pointer'
-              }}
-              onClick={() => setViewMode('assembly')}
-            >
-              [Codice Decompilato {assembly ? `(${assembly.name})` : ''}]
-            </button>
+            {assembly && (
+              <button
+                type="button"
+                style={{
+                  fontWeight: viewMode === 'assembly' ? 'bold' : 'normal',
+                  backgroundColor: viewMode === 'assembly' ? '#c0c0c0' : undefined,
+                  cursor: 'pointer'
+                }}
+                onClick={() => setViewMode('assembly')}
+              >
+                [Codice Decompilato ({assembly.name})]
+              </button>
+            )}
           </div>
         )}
 
@@ -258,7 +283,23 @@ export const App: React.FC = () => {
                 await handleInspectPath(asmPath)
                 setViewMode('assembly')
               }}
-              onClose={() => setViewMode('assembly')}
+              onClose={() => setViewMode('diagram')}
+            />
+          </div>
+        ) : viewMode === 'diagram' ? (
+          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <TechnicalDiagram
+              solution={solution}
+              assembly={assembly}
+              onOpenAssemblyPath={async (asmPath) => {
+                await handleInspectPath(asmPath)
+                setViewMode('assembly')
+              }}
+              onSelectType={(type) => {
+                handleSelectType(type)
+                setViewMode('assembly')
+              }}
+              onClose={() => setViewMode(solution ? 'solution' : 'assembly')}
             />
           </div>
         ) : (
@@ -286,10 +327,14 @@ export const App: React.FC = () => {
               <div style={{ flex: 1.5, marginTop: 4, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                 <div className="window" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                   <div className="title-bar" style={{ height: 18, padding: '1px 3px' }}>
-                    <div className="title-bar-text" style={{ fontSize: 10 }}>Ispettore Metadati</div>
+                    <div className="title-bar-text" style={{ fontSize: 10 }}>Ispettore Metadati &amp; Gerarchia Figli</div>
                   </div>
                   <div className="window-body" style={{ flex: 1, margin: 0, padding: 0, overflowY: 'auto' }}>
-                    <MetadataInspector typeInfo={selectedTypeInfo} />
+                    <MetadataInspector
+                      typeInfo={selectedTypeInfo}
+                      derivedTypes={derivedTypesForSelected}
+                      onSelectType={handleSelectType}
+                    />
                   </div>
                 </div>
               </div>

@@ -9,12 +9,13 @@ import { OpenDialog } from './components/OpenDialog'
 import { AboutDialog } from './components/AboutDialog'
 import { SolutionOverview } from './components/SolutionOverview'
 import { TechnicalDiagram } from './components/TechnicalDiagram'
+import { SystemSitemap360 } from './components/SystemSitemap360'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import type { AssemblyDescriptor, TreeNamespaceGroup, TypeInfo, SolutionDescriptor } from './types/api'
 
 export const App: React.FC = () => {
   const [solution, setSolution] = useState<SolutionDescriptor | null>(null)
-  const [viewMode, setViewMode] = useState<'solution' | 'diagram' | 'assembly'>('solution')
+  const [viewMode, setViewMode] = useState<'solution' | 'sitemap360' | 'diagram' | 'assembly'>('solution')
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [assembly, setAssembly] = useState<AssemblyDescriptor | null>(null)
   const [namespaces, setNamespaces] = useState<TreeNamespaceGroup[]>([])
@@ -236,17 +237,31 @@ export const App: React.FC = () => {
             }}
           >
             {solution && (
-              <button
-                type="button"
-                style={{
-                  fontWeight: viewMode === 'solution' ? 'bold' : 'normal',
-                  backgroundColor: viewMode === 'solution' ? '#c0c0c0' : undefined,
-                  cursor: 'pointer'
-                }}
-                onClick={() => setViewMode('solution')}
-              >
-                [Mappa Sistema: {solution.name}]
-              </button>
+              <>
+                <button
+                  type="button"
+                  style={{
+                    fontWeight: viewMode === 'solution' ? 'bold' : 'normal',
+                    backgroundColor: viewMode === 'solution' ? '#c0c0c0' : undefined,
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => setViewMode('solution')}
+                >
+                  [Mappa Sistema: {solution.name}]
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    fontWeight: viewMode === 'sitemap360' ? 'bold' : 'normal',
+                    backgroundColor: viewMode === 'sitemap360' ? '#c0c0c0' : undefined,
+                    color: '#006633',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => setViewMode('sitemap360')}
+                >
+                  [Sitemap &amp; Flussi 360°]
+                </button>
+              </>
             )}
             <button
               type="button"
@@ -285,7 +300,18 @@ export const App: React.FC = () => {
                   await handleInspectPath(asmPath)
                   setViewMode('assembly')
                 }}
-                onClose={() => setViewMode('diagram')}
+                onClose={() => setViewMode('sitemap360')}
+              />
+            </div>
+          ) : viewMode === 'sitemap360' && solution ? (
+            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <SystemSitemap360
+                solution={solution}
+                onOpenAssemblyPath={async (asmPath) => {
+                  await handleInspectPath(asmPath)
+                  setViewMode('assembly')
+                }}
+                onClose={() => setViewMode('solution')}
               />
             </div>
           ) : viewMode === 'diagram' ? (

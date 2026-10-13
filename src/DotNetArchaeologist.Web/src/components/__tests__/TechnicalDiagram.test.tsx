@@ -132,7 +132,7 @@ describe('TechnicalDiagram Component', () => {
     const searchInput = screen.getByPlaceholderText('Nome tipo...')
     fireEvent.change(searchInput, { target: { value: 'WsGest' } })
 
-    expect(screen.getByText('(1)')).toBeInTheDocument()
+    expect(screen.getByText('(2)')).toBeInTheDocument()
   })
 
   it('renders CAD minimap and synchronizes bidirectional selection', () => {
@@ -173,7 +173,7 @@ describe('TechnicalDiagram Component', () => {
     expect(screen.queryByText(/Tutti i Componenti \(0\)/i)).not.toBeInTheDocument()
   })
 
-  it('preserves components when filtering by classes', () => {
+  it('filters strictly by classes without leaking databases or batch', () => {
     const handleOpen = vi.fn()
     render(
       <TechnicalDiagram
@@ -186,9 +186,28 @@ describe('TechnicalDiagram Component', () => {
     const filterSelect = screen.getByDisplayValue(/Tutti i Componenti/i)
     fireEvent.change(filterSelect, { target: { value: 'classes' } })
 
-    // I componenti del mock (WsGestPdcService, GestPdCObjectContext, GestPdcBatch) devono rimanere visibili
+    // WsGestPdcService deve essere visibile come classe/servizio
     expect(screen.getByText('WsGestPdcService')).toBeInTheDocument()
-    expect(screen.getByText('GestPdCObjectContext')).toBeInTheDocument()
-    expect(screen.getByText('GestPdcBatch')).toBeInTheDocument()
+    // Database e interfacce non devono apparire nel filtro solo classi
+    expect(screen.queryByText('GestPdCObjectContext')).not.toBeInTheDocument()
+  })
+
+  it('filters and displays contract interfaces when selecting interfaces filter', () => {
+    const handleOpen = vi.fn()
+    render(
+      <TechnicalDiagram
+        solution={mockSolution}
+        assembly={null}
+        onOpenAssemblyPath={handleOpen}
+      />
+    )
+
+    const filterSelect = screen.getByDisplayValue(/Tutti i Componenti/i)
+    fireEvent.change(filterSelect, { target: { value: 'interfaces' } })
+
+    // L'interfaccia IWsGestPdcService deve essere presente
+    expect(screen.getByText('IWsGestPdcService')).toBeInTheDocument()
+    // Il database o il batch non devono apparire
+    expect(screen.queryByText('GestPdCObjectContext')).not.toBeInTheDocument()
   })
 })

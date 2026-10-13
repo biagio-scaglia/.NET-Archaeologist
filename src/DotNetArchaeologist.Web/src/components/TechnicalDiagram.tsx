@@ -133,7 +133,7 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
         yWeb += 130 + Math.min(wp.projectReferences.length * 16, 60) + rowGap
       })
 
-      // Colonna 2: Microservizi & API (X = 40 + colWidth + colGap)
+      // Colonna 2: Microservizi & Contratti di Interfaccia (X = 40 + colWidth + colGap)
       const xSvc = 40 + colWidth + colGap
       let ySvc = 40
       solution.services.forEach(svc => {
@@ -144,7 +144,7 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
           title: svc.serviceName,
           category: 'Service',
           technology: svc.technology,
-          subtitle: svc.contractInterface ?? svc.projectName,
+          subtitle: svc.contractInterface ? `Implementa ${svc.contractInterface}` : svc.projectName,
           items: epItems,
           assemblyPath: svc.assemblyPath,
           x: xSvc,
@@ -153,6 +153,33 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
           height: 120 + Math.min(epItems.length * 16, 70),
         })
         ySvc += 130 + Math.min(epItems.length * 16, 70) + rowGap
+
+        // Genera il nodo reale per l'Interfaccia Contratto WCF/API se presente
+        if (svc.contractInterface) {
+          const ifaceId = `iface-${svc.projectName}_${svc.contractInterface}`
+          const ifaceOps = svc.endpoints.slice(0, 4).map(e => `[CONTRACT] ${e.name}()`)
+          nList.push({
+            id: ifaceId,
+            title: svc.contractInterface,
+            category: 'Interface',
+            technology: 'WCF / Service Contract',
+            subtitle: `Interfaccia per ${svc.serviceName}`,
+            items: ifaceOps,
+            assemblyPath: svc.assemblyPath,
+            x: xSvc,
+            y: ySvc,
+            width: colWidth,
+            height: 100 + Math.min(ifaceOps.length * 16, 60),
+          })
+          ySvc += 110 + Math.min(ifaceOps.length * 16, 60) + rowGap
+
+          eList.push({
+            fromId: id,
+            toId: ifaceId,
+            label: 'implements',
+            style: 'implements',
+          })
+        }
       })
 
       // Colonna 3: Database & Persistenza (X = xSvc + colWidth + colGap)
@@ -403,6 +430,36 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
           }
         })
       })
+
+      // Genera nodi per le Interfacce Contratto della Solution
+      services.forEach((svc, sIdx) => {
+        if (svc.contractInterface) {
+          const ifaceId = `iface-${svc.projectName}_${svc.contractInterface}`
+          if (!nList.some(n => n.id === ifaceId)) {
+            const ifaceOps = svc.endpoints.slice(0, 3).map(e => `[CONTRACT] ${e.name}()`)
+            nList.push({
+              id: ifaceId,
+              title: svc.contractInterface,
+              category: 'Interface',
+              technology: 'WCF / Service Contract',
+              subtitle: `Contratto per ${svc.serviceName}`,
+              items: ifaceOps,
+              assemblyPath: svc.assemblyPath,
+              x: 40 + (sIdx % colsCount) * spacingX,
+              y: 40 + (Math.floor(projects.length / colsCount) + 1 + Math.floor(sIdx / colsCount)) * spacingY,
+              width: colWidth,
+              height: 110 + Math.min(ifaceOps.length * 16, 50),
+            })
+
+            eList.push({
+              fromId: `prj-${svc.projectName}`,
+              toId: ifaceId,
+              label: 'espone contratto',
+              style: 'implements',
+            })
+          }
+        }
+      })
     }
     // 4. MODALITÀ ASSEMBLY LOCALE (Class Diagram)
     else if (assembly) {
@@ -478,6 +535,18 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
     }
   }, [selectedTypeFullName, nodes])
 
+  // Conteggi reali dinamici per i layer del filtro
+  const layerCounts = useMemo(() => {
+    return {
+      all: nodes.length,
+      services: nodes.filter(n => n.category === 'Service').length,
+      databases: nodes.filter(n => n.category === 'Database').length,
+      batch: nodes.filter(n => n.category === 'Batch').length,
+      classes: nodes.filter(n => n.category === 'Class' || n.category === 'Service').length,
+      interfaces: nodes.filter(n => n.category === 'Interface').length,
+    }
+  }, [nodes])
+
   // Filtraggio per categoria e query di ricerca
   const filteredNodes = useMemo(() => {
     return nodes.filter(n => {
@@ -485,12 +554,11 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
       if (filter === 'databases' && n.category !== 'Database') return false
       if (filter === 'batch' && n.category !== 'Batch') return false
       if (filter === 'classes') {
-        const isClass = n.category === 'Class' || n.category === 'Service' || n.category === 'Database' || n.category === 'Batch' || n.category === 'Record'
-        if (!isClass) return false
+        if (n.category === 'Interface') return false
+        if (n.category !== 'Class' && n.category !== 'Service' && n.category !== 'Record') return false
       }
       if (filter === 'interfaces') {
-        const isIface = n.category === 'Interface' || n.items.some(i => i.toLowerCase().includes('interface') || i.toLowerCase().includes('contract')) || (n.subtitle && n.subtitle.startsWith('I'))
-        if (!isIface) return false
+        if (n.category !== 'Interface') return false
       }
 
       return true
@@ -608,16 +676,16 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
             onChange={e => setFilter(e.target.value as LayerFilter)}
             style={{ fontSize: '11px' }}
           >
-            <option value="all">Tutti i Componenti ({nodes.length})</option>
+            <option value="all">Tutti i Componenti ({layerCounts.all})</option>
             {diagramView === 'system' && (
               <>
-                <option value="services">Microservizi &amp; WCF/REST</option>
-                <option value="databases">Database &amp; Tabelle EF/SQL</option>
-                <option value="batch">Processi Batch &amp; Worker</option>
+                <option value="services">Microservizi &amp; WCF ({layerCounts.services})</option>
+                <option value="databases">Database &amp; Tabelle EF ({layerCounts.databases})</option>
+                <option value="batch">Processi Batch &amp; Worker ({layerCounts.batch})</option>
               </>
             )}
-            <option value="classes">Solo Classi</option>
-            <option value="interfaces">Solo Interfacce</option>
+            <option value="classes">Solo Classi Concrete ({layerCounts.classes})</option>
+            <option value="interfaces">Solo Interfacce Contratto ({layerCounts.interfaces})</option>
           </select>
 
           <span>|</span>

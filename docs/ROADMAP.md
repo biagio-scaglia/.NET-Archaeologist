@@ -94,20 +94,24 @@ Questo documento definisce le milestone di sviluppo di **.NET Archaeologist**, o
 
 ---
 
-## Milestone 3: Frontend SPA (React, TypeScript & Vite)
-**Obiettivo**: Realizzare l'interfaccia utente web per navigare la struttura dell'assembly e visualizzare il codice decompilato.
+## Milestone 3: Frontend SPA (React, TypeScript & 98.css) (Stato: Completata)
+**Obiettivo**: Realizzare l'interfaccia utente web per navigare la struttura dell'assembly e visualizzare il codice decompilato con estetica retro Windows 98 (98.css) senza emoji.
 
-- [ ] Inizializzazione del frontend `DotNetArchaeologist.Web` (React + Vite + TypeScript).
-- [ ] Configurazione di una UI moderna e reattiva:
-  - Sidebar con file picker locale e albero di navigazione (Namespaces -> Classes -> Methods).
-  - Pannello centrale per visualizzare il codice C# con syntax highlighting.
-  - Scheda laterale con metadati dettagliati del tipo o metodo selezionato (token IL, modificatori, dimensione).
-- [ ] Connessione sicura al backend locale.
-- [ ] Test unitari frontend con Vitest.
-
-**Criteri di verifica**:
-- `npm run dev` avvia l'interfaccia senza errori in console.
-- Selezione di un elemento nell'albero carica istantaneamente il codice C# decompilato corrispondente.
+- [x] Inizializzazione del frontend `DotNetArchaeologist.Web` (React 19 + Vite 8 + TypeScript).
+- [x] Integrazione della libreria `98.css` per una fedele interfaccia desktop in stile Windows 98.
+- [x] Design rigorosamente privo di emoji con badge tipizzati ([C], [I], [S], [E], [R], [D]).
+- [x] Componenti realizzati:
+  - `TitleBar`: barra del titolo Windows 98 con controlli finestra e nome assembly.
+  - `MenuBar`: barra dei menu classici (File, Reimposta, Guida).
+  - `OpenDialog`: dialog a schede per caricamento file o inserimento percorso locale.
+  - `ExplorerTree`: albero di navigazione (`tree-view`) con filtro istantaneo di ricerca per tipo e namespace.
+  - `DecompilerView`: visualizzatore di codice C# con font monospace, pulsanti di copia e selezione.
+  - `MetadataInspector`: ispezione dettagliata delle definizioni di tipo, interfacce e tabella membri.
+  - `StatusBar`: barra inferiore a campi incassati con stato, assembly, target runtime e tipo selezionato.
+  - `AboutDialog`: finestra informativa sul software e sulla licenza MIT.
+- [x] Connessione al backend locale tramite proxy Vite (`/api`).
+- [x] Test unitari del frontend con Vitest e Testing Library (8/8 superati).
+- [x] Build di produzione verificata (`npm run build`).
 
 ---
 

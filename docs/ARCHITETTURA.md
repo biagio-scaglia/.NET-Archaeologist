@@ -87,7 +87,53 @@ L'architettura è suddivisa in una parte **Backend** (.NET / C#) e una parte **F
 
 ---
 
-## 3. Modello Dati del Grafo Architetturale
+## 3. Modello di Sicurezza Locale, Limiti Operativi e Gestione delle Risorse
+
+L'applicazione opera localmente su loopback (`127.0.0.1` / `localhost`) esponendo capacità di analisi sul filesystem dell'utente. Per garantire un'adeguata postura di difesa in profondità, il sistema applica le seguenti misure:
+
+### 3.1 Isolamento su Loopback e Protezione Cross-Origin
+- **Binding Locale Esclusivo**: il server backend è configurato per ascoltare unicamente su indirizzi di loopback locale (`127.0.0.1` o `localhost`).
+- **Policy CORS Ristretta**: le intestazioni CORS consentono esclusivamente le origini del frontend locale (`http://localhost:5173`, `http://127.0.0.1:5173`, `http://localhost:3000`, `http://127.0.0.1:3000`).
+- **`LocalOriginValidationMiddleware`**:
+  - Convalida attiva delle intestazioni `Origin`, `Referer` e `Sec-Fetch-Site`.
+  - Le richieste cross-site provenienti da pagine web esterne aperte nel browser dell'utente vengono categoricamente respinte con stato HTTP `403 Forbidden`.
+  - Previene attacchi di tipo drive-by web, CSRF cross-origin e tentativi di port scanning locale.
+
+### 3.2 Validazione del Filesystem e Restrizioni di Accesso
+Il componente `LocalPathSecurityValidator` applica regole deterministiche di controllo prima di qualsiasi accesso al disco:
+- **Normalizzazione dei Percorsi**: risoluzione tramite `Path.GetFullPath` per mitigare attacchi di path traversal (`../`).
+- **Blocco Percorsi Remoti UNC**: blocco delle richieste verso condivisioni di rete remote (`\\attacker\share`) per impedire attacchi di tipo NTLM relay o ritardi di rete non controllati.
+- **Whitelist delle Estensioni**:
+  - Endpoint assembly (`inspect-path`, `inspect`): estensioni ammesse rigorosamente limitate a `.dll` e `.exe`.
+  - Endpoint Solution (`inspect`): estensioni ammesse limitate a `.sln` e `.slnx` o cartelle di progetto.
+  - Qualsiasi richiesta di lettura per file arbitrari (`.txt`, `.json`, `.config`, `.sam`, `.key`) viene respinta con HTTP `400 Bad Request`.
+- **Protezione Directory di Sistema**: blocco esplicito di richieste che tentano di accedere o scansionare directory sensibili del sistema operativo (es. `C:\Windows`, `System32`, `config`).
+- **Blocco Scansione Radice Disco**: divieto di scansione ricorsiva dell'intera radice dell'unità (es. `C:\`), richiedendo una cartella di progetto specifica.
+
+### 3.3 Limiti Operativi per la Prevenzione dell'Esaurimento Risorse (DoS)
+- **Dimensione Massima File Assembly**: limite predefinito a 250 MB (`DefaultMaxFileSizeBytes`). I file eccedenti vengono rifiutati con `400 Bad Request`.
+- **Limite Scansione Ricorsiva Cartella**: profondità massima di ricorsione fissata a 8 livelli e massimo 2.000 assembly gestiti rilevati per singola operazione (`DefaultMaxDiscoveredAssemblies`).
+- **Gestione Accessi Negati**: gestione silenziosa o controllata con HTTP `403 Forbidden` (`UnauthorizedAccessException`) per percorsi privi di permessi di lettura.
+
+### 3.4 Gestione delle Sessioni in Memoria e Risorse RAM
+L'implementazione `InMemoryAssemblySessionStore` adotta una politica configurabile di ciclo di vita delle risorse:
+- **Time-To-Live (TTL)**: timeout di validità delle sessioni impostato a 60 minuti (`SessionTimeout`).
+- **Sliding Expiration**: abilitato per default; ogni interrogazione (lettura metadati, albero, grafo o decompilazione) rinnova la finestra temporale di vita della sessione.
+- **Limite Sessioni Concorrenti**: massimo 50 sessioni attive simultaneamente in RAM (`MaxConcurrentSessions`).
+- **Limite Memoria Aggregata**: massimo 500 MB di byte binari cumulativi memorizzati in RAM (`MaxTotalBytes`).
+- **Politica di Espulsione (LRU)**: al superamento della capacità massima o della memoria consentita, vengono espulse automaticamente le sessioni meno recentemente utilizzate (*Least Recently Used*).
+- **Configurabilità**: parametri modificabili via `appsettings.json` nella sezione `AssemblySession`.
+
+### 3.5 Comportamento degli Endpoint in caso di Errore
+- `400 Bad Request`: parametri non validi, estensioni non supportate, file vuoti o oltre il limite dimensionale consentito.
+- `403 Forbidden`: richieste cross-site o da origini esterne non autorizzate, tentativi di accesso a directory di sistema protette o percorsi UNC.
+- `404 Not Found`: file, cartelle o sessioni non trovate oppure scadute per superamento del TTL.
+
+> **Nota di Trasparenza Operativa**: Le misure sopra descritte costituiscono un modello di difesa in profondità adeguato a un'applicazione di analisi ad uso locale. Non intendono rappresentare una garanzia assoluta di invulnerabilità a fronte di scenari in cui la macchina locale dell'utente sia già compromessa.
+
+---
+
+## 4. Modello Dati del Grafo Architetturale
 
 La ricostruzione architetturale viene modellata come un grafo diretto pesato:
 
@@ -109,7 +155,7 @@ La ricostruzione architetturale viene modellata come un grafo diretto pesato:
 
 ---
 
-## 4. Confini e Integrazione di REA (Reverse Engineer Anything)
+## 5. Confini e Integrazione di REA (Reverse Engineer Anything)
 
 Nello sviluppo del progetto è presente la skill locale e il server MCP **REA**:
 
@@ -124,12 +170,14 @@ Nello sviluppo del progetto è presente la skill locale e il server MCP **REA**:
 
 ---
 
-## 5. Strategia di Test
+## 6. Strategia di Test
 
 - **Unit Test Backend (xUnit)**:
   - Verifica della lettura dei metadati su assembly di fixture noti.
   - Verifica del calcolo corretto di nodi e archi del grafo.
   - Verifica del decompiler su costrutti C# moderni (records, async/await, generics).
+  - Verifica dei vincoli di sicurezza sui percorsi locali, estensioni ammesse e protezione cross-origin (`SecurityApiTests`).
+  - Verifica del ciclo di vita delle sessioni, TTL, sliding expiration e politica LRU (`AssemblySessionStoreTests`).
 - **Unit & Component Test Frontend (Vitest)**:
   - Test sui reducer e sullo stato del grafo.
-  - Test dei componenti UI di navigazione ad albero e ispezione metadati.
+  - Test dei componenti UI di navigazione ad albero, ispezione metadati e disegno blueprint.

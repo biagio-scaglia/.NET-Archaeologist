@@ -19,9 +19,12 @@ L'applicazione consente di:
 ---
 
 ## Principi di Sicurezza e Privacy
-
+ 
 - **Nessuna esecuzione di codice target**: Gli assembly esaminati vengono caricati esclusivamente per via statica e passiva (`System.Reflection.Metadata` / stream di decompilazione). Nessun codice non fidato viene eseguito a runtime.
 - **Offline & Privacy-first**: Nessun binario, metadato o informazione proprietaria viene inviata a cloud o server esterni. Tutto rimane confinato sul computer locale.
+- **Isolamento su Loopback e Protezione Cross-Origin**: L'API ascolta solo su loopback locale ed e protetta da un middleware che respinge richieste provenienti da origini esterne (`Sec-Fetch-Site: cross-site`), mitigando attacchi web drive-by.
+- **Restrizioni Filesystem e Difesa in Profondita**: I percorsi di file e cartelle sono normalizzati e vincolati a estensioni ammesse (`.dll`, `.exe`, `.sln`, `.slnx`), con blocco di percorsi remoti UNC, directory di sistema protette e limiti dimensionali (max 250 MB per assembly).
+- **Gestione della Memoria con TTL**: Le sessioni in RAM adottano scadenza temporale (TTL di 60 minuti con sliding expiration), limite massimo di concorrenza (50 sessioni) e politica di espulsione LRU al raggiungimento della memoria massima (500 MB).
 - **Integrita dei binari**: L'applicazione non modifica ne corrompe mai i file analizzati.
 
 ---

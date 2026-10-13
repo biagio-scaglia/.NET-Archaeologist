@@ -40,8 +40,8 @@ interface DiagramEdge {
 type LayerFilter = 'all' | 'services' | 'databases' | 'batch' | 'classes' | 'interfaces'
 type EdgeMode = 'focus' | 'all' | 'none'
 
-function formatShortTech(tech: string): string {
-  if (!tech) return ''
+function formatShortTech(tech: unknown): string {
+  if (!tech || typeof tech !== 'string') return typeof tech === 'number' ? `Modulo #${tech}` : ''
   if (tech.includes('Entity Framework') || tech.includes('ObjectContext') || tech.includes('DbContext')) {
     return 'Entity Framework'
   }
@@ -334,35 +334,52 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
       const spacingX = 360
       const spacingY = 220
 
-      solution.projects.forEach((prj, idx) => {
+      const projects = solution.projects || []
+      const services = solution.services || []
+      const databases = solution.databases || []
+      const batchWorkers = solution.batchWorkers || []
+
+      projects.forEach((prj, idx) => {
         const col = idx % colsCount
         const row = Math.floor(idx / colsCount)
         const posX = 40 + col * spacingX
         const posY = 40 + row * spacingY
 
-        const relatedServices = solution.services.filter(s => s.projectName.toLowerCase() === prj.name.toLowerCase())
-        const relatedDbs = solution.databases.filter(d => d.projectName.toLowerCase() === prj.name.toLowerCase())
-        const relatedBatch = solution.batchWorkers.filter(b => b.projectName.toLowerCase() === prj.name.toLowerCase())
+        const prjName = (prj.name || '').toLowerCase()
 
+        const relatedServices = services.filter(s => s.projectName && s.projectName.toLowerCase() === prjName)
+        const relatedDbs = databases.filter(d => d.projectName && d.projectName.toLowerCase() === prjName)
+        const relatedBatch = batchWorkers.filter(b => b.projectName && b.projectName.toLowerCase() === prjName)
+
+        const pRefs = prj.projectReferences || []
         const items: string[] = [
-          ...relatedServices.slice(0, 2).map(s => `[SVC] ${s.serviceName}`),
-          ...relatedDbs.slice(0, 2).map(d => `[DB] ${d.name}`),
-          ...relatedBatch.slice(0, 2).map(b => `[BAT] ${b.workerName}`),
-          ...prj.projectReferences.slice(0, 2).map(r => `-> ${r}`),
+          ...relatedServices.slice(0, 2).map(s => `[SVC] ${s.serviceName || 'Service'}`),
+          ...relatedDbs.slice(0, 2).map(d => `[DB] ${d.name || 'Database'}`),
+          ...relatedBatch.slice(0, 2).map(b => `[BAT] ${b.workerName || 'Worker'}`),
+          ...pRefs.slice(0, 2).map(r => `-> ${r}`),
         ]
 
+        // Supporta sia stringhe che interi numerici da enum C#
+        const rawCat = prj.category as unknown
         const cat: DiagramNode['category'] =
-          prj.category === 'Web' ? 'Web' :
-          prj.category === 'Service' ? 'Service' :
-          prj.category === 'Database' ? 'Database' :
-          prj.category === 'Batch' ? 'Batch' : 'Class'
+          rawCat === 'Web' || rawCat === 3 ? 'Web' :
+          rawCat === 'Service' || rawCat === 0 ? 'Service' :
+          rawCat === 'Database' || rawCat === 1 ? 'Database' :
+          rawCat === 'Batch' || rawCat === 2 ? 'Batch' : 'Class'
+
+        const techLabel = (prj.detectedTechnologies && prj.detectedTechnologies.length > 0)
+          ? String(prj.detectedTechnologies[0])
+          : (cat === 'Web' ? 'ASP.NET Web / MVC' :
+             cat === 'Service' ? 'WCF / Service' :
+             cat === 'Database' ? 'Database / DAL' :
+             cat === 'Batch' ? 'Batch Worker' : 'Libreria / Modulo')
 
         nList.push({
           id: `prj-${prj.name}`,
           title: prj.name,
           category: cat,
-          technology: prj.detectedTechnologies[0] ?? prj.category,
-          subtitle: prj.relativePath,
+          technology: techLabel,
+          subtitle: prj.relativePath || '',
           items,
           assemblyPath: prj.outputAssemblyPath,
           x: posX,
@@ -372,8 +389,10 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
         })
 
         // Connessioni basate su ProjectReference reali
-        prj.projectReferences.forEach(refName => {
-          const targetPrj = solution.projects.find(p => p.name.toLowerCase() === refName.toLowerCase())
+        pRefs.forEach(refName => {
+          if (!refName) return
+          const refL = refName.toLowerCase()
+          const targetPrj = projects.find(p => p.name && p.name.toLowerCase() === refL)
           if (targetPrj) {
             eList.push({
               fromId: `prj-${prj.name}`,

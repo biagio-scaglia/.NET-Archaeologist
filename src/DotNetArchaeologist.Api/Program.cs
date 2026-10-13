@@ -45,6 +45,12 @@ builder.Services.AddSingleton<IArchitectureGraphBuilder, ArchitectureGraphBuilde
 builder.Services.AddSingleton<ISolutionInspector, SolutionInspector>();
 builder.Services.AddSingleton<IAssemblySessionStore, InMemoryAssemblySessionStore>();
 
+// Configurazione serializzazione JSON HTTP (converte gli enum in stringhe descrittive)
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+});
+
 var app = builder.Build();
 
 app.UseMiddleware<LocalOriginValidationMiddleware>();

@@ -9,6 +9,7 @@ import { OpenDialog } from './components/OpenDialog'
 import { AboutDialog } from './components/AboutDialog'
 import { SolutionOverview } from './components/SolutionOverview'
 import { TechnicalDiagram } from './components/TechnicalDiagram'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import type { AssemblyDescriptor, TreeNamespaceGroup, TypeInfo, SolutionDescriptor } from './types/api'
 
 export const App: React.FC = () => {
@@ -275,78 +276,80 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {viewMode === 'solution' && solution ? (
-          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <SolutionOverview
-              solution={solution}
-              onOpenAssemblyPath={async (asmPath) => {
-                await handleInspectPath(asmPath)
-                setViewMode('assembly')
-              }}
-              onClose={() => setViewMode('diagram')}
-            />
-          </div>
-        ) : viewMode === 'diagram' ? (
-          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <TechnicalDiagram
-              solution={solution}
-              assembly={assembly}
-              sessionId={sessionId}
-              selectedTypeFullName={selectedTypeFullName}
-              onOpenAssemblyPath={async (asmPath) => {
-                await handleInspectPath(asmPath)
-                setViewMode('assembly')
-              }}
-              onSelectType={(type) => {
-                handleSelectType(type)
-                setViewMode('assembly')
-              }}
-              onClose={() => setViewMode(solution ? 'solution' : 'assembly')}
-            />
-          </div>
-        ) : (
-          <div className="workspace-split">
-            {/* Riquadro di sinistra: Navigazione ad albero */}
-            <div className="left-pane">
-              <ExplorerTree
-                namespaces={namespaces}
-                selectedTypeFullName={selectedTypeFullName}
-                onSelectType={handleSelectType}
+        <ErrorBoundary fallbackTitle=".NET Archaeologist - Errore Area di Lavoro" onReset={() => setViewMode(solution ? 'solution' : 'assembly')}>
+          {viewMode === 'solution' && solution ? (
+            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <SolutionOverview
+                solution={solution}
+                onOpenAssemblyPath={async (asmPath) => {
+                  await handleInspectPath(asmPath)
+                  setViewMode('assembly')
+                }}
+                onClose={() => setViewMode('diagram')}
               />
             </div>
-
-            {/* Riquadro di destra: Decompilatore e Ispettore metadati */}
-            <div className="right-pane">
-              <div style={{ flex: 3, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                <DecompilerView
-                  selectedType={selectedTypeFullName}
-                  code={decompiledCode}
-                  loading={decompileLoading}
-                  onDecompileWholeModule={assembly ? handleDecompileWholeModule : undefined}
+          ) : viewMode === 'diagram' ? (
+            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <TechnicalDiagram
+                solution={solution}
+                assembly={assembly}
+                sessionId={sessionId}
+                selectedTypeFullName={selectedTypeFullName}
+                onOpenAssemblyPath={async (asmPath) => {
+                  await handleInspectPath(asmPath)
+                  setViewMode('assembly')
+                }}
+                onSelectType={(type) => {
+                  handleSelectType(type)
+                  setViewMode('assembly')
+                }}
+                onClose={() => setViewMode(solution ? 'solution' : 'assembly')}
+              />
+            </div>
+          ) : (
+            <div className="workspace-split">
+              {/* Riquadro di sinistra: Navigazione ad albero */}
+              <div className="left-pane">
+                <ExplorerTree
+                  namespaces={namespaces}
+                  selectedTypeFullName={selectedTypeFullName}
+                  onSelectType={handleSelectType}
                 />
               </div>
 
-              <div style={{ flex: 1.5, marginTop: 4, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                <div className="window" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                  <div className="title-bar" style={{ height: 18, padding: '1px 3px' }}>
-                    <div className="title-bar-text" style={{ fontSize: 10 }}>Ispettore Metadati &amp; Gerarchia Figli</div>
-                  </div>
-                  <div className="window-body" style={{ flex: 1, margin: 0, padding: 0, overflowY: 'auto' }}>
-                    <MetadataInspector
-                      typeInfo={selectedTypeInfo}
-                      derivedTypes={derivedTypesForSelected}
-                      onSelectType={handleSelectType}
-                      onShowInGraph={(type) => {
-                        setSelectedTypeFullName(type)
-                        setViewMode('diagram')
-                      }}
-                    />
+              {/* Riquadro di destra: Decompilatore e Ispettore metadati */}
+              <div className="right-pane">
+                <div style={{ flex: 3, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                  <DecompilerView
+                    selectedType={selectedTypeFullName}
+                    code={decompiledCode}
+                    loading={decompileLoading}
+                    onDecompileWholeModule={assembly ? handleDecompileWholeModule : undefined}
+                  />
+                </div>
+
+                <div style={{ flex: 1.5, marginTop: 4, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                  <div className="window" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                    <div className="title-bar" style={{ height: 18, padding: '1px 3px' }}>
+                      <div className="title-bar-text" style={{ fontSize: 10 }}>Ispettore Metadati &amp; Gerarchia Figli</div>
+                    </div>
+                    <div className="window-body" style={{ flex: 1, margin: 0, padding: 0, overflowY: 'auto' }}>
+                      <MetadataInspector
+                        typeInfo={selectedTypeInfo}
+                        derivedTypes={derivedTypesForSelected}
+                        onSelectType={handleSelectType}
+                        onShowInGraph={(type) => {
+                          setSelectedTypeFullName(type)
+                          setViewMode('diagram')
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </ErrorBoundary>
 
         <StatusBar
           statusText={statusMessage}

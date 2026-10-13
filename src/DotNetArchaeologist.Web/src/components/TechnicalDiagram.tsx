@@ -272,7 +272,7 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
         })
       })
     }
-    // 2. MODALITÀ GRAFO CLI: GRAFO ARCHITETTURALE INTERATTIVO (Tipi, Interfacce, Dipendenze)
+    // 2. MODALITÀ GRAFO BACKEND CLI (Se è aperta una sessione assembly singola)
     else if (backendGraph && backendGraph.nodes.length > 0) {
       const colWidth = 260
       const colHeight = 110
@@ -280,7 +280,6 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
       const spacingX = 330
       const spacingY = 160
 
-      // Filtra i nodi Assembly o Namespace puri se non richiesti per chiarezza
       const typeNodes = backendGraph.nodes.filter(n => n.kind !== 'Assembly' && n.kind !== 'Namespace')
 
       typeNodes.forEach((node, idx) => {
@@ -311,9 +310,8 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
         })
       })
 
-      // Mappatura archi del backend
       backendGraph.edges.forEach(edge => {
-        if (edge.relation === 'Declares') return // Evita archi tra namespace e tipi per pulizia visiva
+        if (edge.relation === 'Declares') return
 
         const style = (
           edge.relation === 'Inherits' ? 'inheritance' :
@@ -329,7 +327,65 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
         })
       })
     }
-    // 3. FALLBACK: ASSEMBLY LOCALE SE GRAFO BACKEND NON ANCORA CARICATO
+    // 3. MODALITÀ GRAFO PROGETTI & DIPENDENZE SOLUTION (Se c'è una solution ma non ancora un singolo assembly)
+    else if (solution) {
+      const colWidth = 290
+      const colsCount = 3
+      const spacingX = 360
+      const spacingY = 220
+
+      solution.projects.forEach((prj, idx) => {
+        const col = idx % colsCount
+        const row = Math.floor(idx / colsCount)
+        const posX = 40 + col * spacingX
+        const posY = 40 + row * spacingY
+
+        const relatedServices = solution.services.filter(s => s.projectName.toLowerCase() === prj.name.toLowerCase())
+        const relatedDbs = solution.databases.filter(d => d.projectName.toLowerCase() === prj.name.toLowerCase())
+        const relatedBatch = solution.batchWorkers.filter(b => b.projectName.toLowerCase() === prj.name.toLowerCase())
+
+        const items: string[] = [
+          ...relatedServices.slice(0, 2).map(s => `[SVC] ${s.serviceName}`),
+          ...relatedDbs.slice(0, 2).map(d => `[DB] ${d.name}`),
+          ...relatedBatch.slice(0, 2).map(b => `[BAT] ${b.workerName}`),
+          ...prj.projectReferences.slice(0, 2).map(r => `-> ${r}`),
+        ]
+
+        const cat: DiagramNode['category'] =
+          prj.category === 'Web' ? 'Web' :
+          prj.category === 'Service' ? 'Service' :
+          prj.category === 'Database' ? 'Database' :
+          prj.category === 'Batch' ? 'Batch' : 'Class'
+
+        nList.push({
+          id: `prj-${prj.name}`,
+          title: prj.name,
+          category: cat,
+          technology: prj.detectedTechnologies[0] ?? prj.category,
+          subtitle: prj.relativePath,
+          items,
+          assemblyPath: prj.outputAssemblyPath,
+          x: posX,
+          y: posY,
+          width: colWidth,
+          height: 120 + Math.min(items.length * 16, 80),
+        })
+
+        // Connessioni basate su ProjectReference reali
+        prj.projectReferences.forEach(refName => {
+          const targetPrj = solution.projects.find(p => p.name.toLowerCase() === refName.toLowerCase())
+          if (targetPrj) {
+            eList.push({
+              fromId: `prj-${prj.name}`,
+              toId: `prj-${targetPrj.name}`,
+              label: 'dipende da',
+              style: 'dependency',
+            })
+          }
+        })
+      })
+    }
+    // 4. MODALITÀ ASSEMBLY LOCALE (Class Diagram)
     else if (assembly) {
       const typeList = assembly.types.slice(0, 35)
       let currX = 40
@@ -406,12 +462,17 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
   // Filtraggio per categoria e query di ricerca
   const filteredNodes = useMemo(() => {
     return nodes.filter(n => {
-      // Filtro per layer
       if (filter === 'services' && n.category !== 'Service') return false
       if (filter === 'databases' && n.category !== 'Database') return false
       if (filter === 'batch' && n.category !== 'Batch') return false
-      if (filter === 'classes' && n.category !== 'Class') return false
-      if (filter === 'interfaces' && n.category !== 'Interface') return false
+      if (filter === 'classes') {
+        const isClass = n.category === 'Class' || n.category === 'Service' || n.category === 'Database' || n.category === 'Batch' || n.category === 'Record'
+        if (!isClass) return false
+      }
+      if (filter === 'interfaces') {
+        const isIface = n.category === 'Interface' || n.items.some(i => i.toLowerCase().includes('interface') || i.toLowerCase().includes('contract')) || (n.subtitle && n.subtitle.startsWith('I'))
+        if (!isIface) return false
+      }
 
       return true
     })

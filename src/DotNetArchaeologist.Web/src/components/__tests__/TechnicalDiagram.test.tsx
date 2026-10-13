@@ -151,4 +151,44 @@ describe('TechnicalDiagram Component', () => {
     expect(screen.getByText('Minimappa CAD')).toBeInTheDocument()
     expect(screen.getByText('Dettaglio Componente CAD')).toBeInTheDocument()
   })
+
+  it('renders projects and references in graph mode when only solution is loaded without assembly', () => {
+    const handleOpen = vi.fn()
+    render(
+      <TechnicalDiagram
+        solution={mockSolution}
+        assembly={null}
+        onOpenAssemblyPath={handleOpen}
+      />
+    )
+
+    const switchBtn = screen.getByRole('button', { name: /Grafo Dipendenze/i })
+    fireEvent.click(switchBtn)
+
+    // Verifica che il pulsante sia diventato "Torna a Mappa Sistema"
+    expect(screen.getByRole('button', { name: /Torna a Mappa Sistema/i })).toBeInTheDocument()
+    // Verifica che il progetto GestPdC.Web sia renderizzato
+    expect(screen.getByText('GestPdC.Web')).toBeInTheDocument()
+    // Verifica che il conteggio non sia 0
+    expect(screen.queryByText(/Tutti i Componenti \(0\)/i)).not.toBeInTheDocument()
+  })
+
+  it('preserves components when filtering by classes', () => {
+    const handleOpen = vi.fn()
+    render(
+      <TechnicalDiagram
+        solution={mockSolution}
+        assembly={null}
+        onOpenAssemblyPath={handleOpen}
+      />
+    )
+
+    const filterSelect = screen.getByDisplayValue(/Tutti i Componenti/i)
+    fireEvent.change(filterSelect, { target: { value: 'classes' } })
+
+    // I componenti del mock (WsGestPdcService, GestPdCObjectContext, GestPdcBatch) devono rimanere visibili
+    expect(screen.getByText('WsGestPdcService')).toBeInTheDocument()
+    expect(screen.getByText('GestPdCObjectContext')).toBeInTheDocument()
+    expect(screen.getByText('GestPdcBatch')).toBeInTheDocument()
+  })
 })

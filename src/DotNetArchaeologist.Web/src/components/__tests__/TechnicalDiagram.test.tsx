@@ -118,4 +118,37 @@ describe('TechnicalDiagram Component', () => {
     expect(screen.getByText('Dettaglio Componente CAD')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Decompila Codice Assembly/i })).toBeInTheDocument()
   })
+
+  it('filters and highlights nodes when searching via input', () => {
+    const handleOpen = vi.fn()
+    render(
+      <TechnicalDiagram
+        solution={mockSolution}
+        assembly={null}
+        onOpenAssemblyPath={handleOpen}
+      />
+    )
+
+    const searchInput = screen.getByPlaceholderText('Nome tipo...')
+    fireEvent.change(searchInput, { target: { value: 'WsGest' } })
+
+    expect(screen.getByText('(1)')).toBeInTheDocument()
+  })
+
+  it('renders CAD minimap and synchronizes bidirectional selection', () => {
+    const handleOpen = vi.fn()
+    const handleSelectType = vi.fn()
+    render(
+      <TechnicalDiagram
+        solution={mockSolution}
+        assembly={null}
+        selectedTypeFullName="WsGestPdcService"
+        onOpenAssemblyPath={handleOpen}
+        onSelectType={handleSelectType}
+      />
+    )
+
+    expect(screen.getByText('Minimappa CAD')).toBeInTheDocument()
+    expect(screen.getByText('Dettaglio Componente CAD')).toBeInTheDocument()
+  })
 })

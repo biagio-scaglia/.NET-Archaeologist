@@ -148,7 +148,7 @@ export const OpenDialog: React.FC<OpenDialogProps> = ({
                       type="text"
                       value={solutionInputPath}
                       onChange={(e) => setSolutionInputPath(e.target.value)}
-                      placeholder="C:\Users\...\cartella\gest-pdc o GestPdC.sln"
+                      placeholder="C:\Users\...\cartella\file.sln"
                       style={{ width: '100%', boxSizing: 'border-box' }}
                       disabled={loading}
                     />
@@ -291,10 +291,10 @@ export const OpenDialog: React.FC<OpenDialogProps> = ({
                     (activeTab === 'solution'
                       ? !solutionInputPath.trim()
                       : activeTab === 'folder'
-                      ? !selectedDiscoveredPath
-                      : activeTab === 'path'
-                      ? !localPath.trim()
-                      : !selectedFile)
+                        ? !selectedDiscoveredPath
+                        : activeTab === 'path'
+                          ? !localPath.trim()
+                          : !selectedFile)
                   }
                   style={{ minWidth: 80, fontWeight: 'bold' }}
                 >

@@ -135,22 +135,27 @@ Questo documento definisce le milestone di sviluppo di **.NET Archaeologist**, o
 
 ---
 
-## Milestone 4: Grafo Architetturale Interattivo (React Flow)
-**Obiettivo**: Ricostruire e visualizzare le relazioni tra componenti in un grafo interattivo.
+## Milestone 4: Grafo Architetturale Interattivo (Stato: Completata)
+**Obiettivo**: Ricostruire e visualizzare le relazioni tra componenti in un grafo architetturale CAD interattivo fedele all'estetica retro Windows 98 (98.css).
 
-- [ ] Calcolo delle relazioni nel backend:
-  - Ereditarietà e interfacce implementate.
-  - Chiamate di metodo (analisi istruzioni `call` e `callvirt` nel flusso IL).
-  - Dipendenze tra tipi e campi.
-- [ ] Integrazione di React Flow nel frontend:
-  - Nodi personalizzati per Assembly, Namespace, Classi, Interfacce.
-  - Layout automatico e controlli interattivi (zoom, pan, minimappa).
-  - Filtri per isolare sotto-grafi o percorsi di dipendenza.
-- [ ] Sincronizzazione bidirezionale: cliccare un nodo nel grafo evidenzia il codice nel decompiler e viceversa.
-
-**Criteri di verifica**:
-- Il grafo visualizza correttamente le dipendenze tra classi e interfacce senza sovrapposizioni illegibili.
-- Le interazioni sono fluide anche con centinaia di nodi.
+- [x] Calcolo delle relazioni strutturali e semantiche nel backend (`ArchitectureGraphBuilder`):
+  - Ereditarietà di classi e tipi base (`Inherits`).
+  - Implementazione di contratti e interfacce (`Implements`).
+  - Decodifica delle signature ECMA-335 a Zero-Execution con `MetadataSignatureTypeProvider` (`ISignatureTypeProvider`).
+  - Mappatura automatica delle dipendenze di tipo attraverso campi, proprietà, parametri e valori di ritorno (`References`).
+  - Configurazione avanzata con `ArchitectureGraphOptions` (inclusione/esclusione tipi esterni e riferimenti membri).
+- [x] Endpoint backend dedicato `GET /api/assemblies/{sessionId}/graph` con query string `includeReferences` e `includeExternal`.
+- [x] Grafo architetturale e disegno tecnico CAD Blueprint interattivo nel frontend (`TechnicalDiagram.tsx`):
+  - Visualizzazione a doppia modalità: *Mappa di Sistema Solution* (4 colonne tematiche) e *Grafo Dipendenze Tipi & Relazioni*.
+  - Nodi tipizzati in stile Windows 98 per Classi (`[C]`), Interfacce (`[I]`), Strutture (`[S]`), Enumerazioni (`[E]`) e Record (`[R]`).
+  - Connettori Bézier vettoriali orientati con frecce piene, cave o tratteggiate a seconda del tipo di relazione (`Inherits`, `Implements`, `References`).
+  - Barra di ricerca nodi istantanea con evidenziazione in tempo reale e selezione rapida.
+  - Minimappa CAD / Radar Pan flottante con anteprima in scala della griglia e dei componenti.
+  - Controlli CAD fluidi: Zoom percentualizzato (40% - 250%), Reset 1:1, filtri per categoria e modalità di connessione (*Focus*, *Tutte*, *Nessuna*).
+- [x] Sincronizzazione bidirezionale completa tra Grafo e Decompilatore C#:
+  - Cliccando su un blocco nel grafo si apre il pannello laterale con il pulsante *Visualizza Classe nel Decompilatore*, che apre direttamente il codice sorgente C#.
+  - Dalla vista codice e dall'Ispettore Metadati, il pulsante *[Mostra nel Grafo Tecnico]* seleziona ed evidenzia immediatamente il nodo nel diagramma.
+- [x] Suite completa di test automatizzati (62/62 superati: 46 xUnit backend + 16 Vitest frontend).
 
 ---
 

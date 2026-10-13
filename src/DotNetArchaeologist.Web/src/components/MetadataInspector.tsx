@@ -5,12 +5,14 @@ interface MetadataInspectorProps {
   typeInfo: TypeInfo | null
   derivedTypes?: string[]
   onSelectType?: (typeFullName: string) => void
+  onShowInGraph?: (typeFullName: string) => void
 }
 
 export const MetadataInspector: React.FC<MetadataInspectorProps> = ({
   typeInfo,
   derivedTypes = [],
-  onSelectType
+  onSelectType,
+  onShowInGraph
 }) => {
   if (!typeInfo) {
     return (
@@ -24,6 +26,17 @@ export const MetadataInspector: React.FC<MetadataInspectorProps> = ({
     <div style={{ height: '100%', overflowY: 'auto', padding: 6, fontSize: 11 }}>
       <fieldset style={{ marginBottom: 8 }}>
         <legend>Definizione Tipo</legend>
+        {onShowInGraph && (
+          <div style={{ marginBottom: 6, textAlign: 'right' }}>
+            <button
+              type="button"
+              onClick={() => onShowInGraph(typeInfo.fullName)}
+              style={{ padding: '2px 6px', fontSize: 10, cursor: 'pointer', fontWeight: 'bold' }}
+            >
+              [Mostra nel Grafo Tecnico]
+            </button>
+          </div>
+        )}
         <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: '3px 8px' }}>
           <strong>Nome Completo:</strong>
           <span style={{ wordBreak: 'break-all' }}>{typeInfo.fullName}</span>

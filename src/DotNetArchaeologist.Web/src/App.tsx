@@ -291,6 +291,8 @@ export const App: React.FC = () => {
             <TechnicalDiagram
               solution={solution}
               assembly={assembly}
+              sessionId={sessionId}
+              selectedTypeFullName={selectedTypeFullName}
               onOpenAssemblyPath={async (asmPath) => {
                 await handleInspectPath(asmPath)
                 setViewMode('assembly')
@@ -334,6 +336,10 @@ export const App: React.FC = () => {
                       typeInfo={selectedTypeInfo}
                       derivedTypes={derivedTypesForSelected}
                       onSelectType={handleSelectType}
+                      onShowInGraph={(type) => {
+                        setSelectedTypeFullName(type)
+                        setViewMode('diagram')
+                      }}
                     />
                   </div>
                 </div>

@@ -1,12 +1,15 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import type {
   SolutionDescriptor,
   AssemblyDescriptor,
+  ArchitectureGraphDto,
 } from '../types/api'
 
 interface TechnicalDiagramProps {
   solution: SolutionDescriptor | null
   assembly: AssemblyDescriptor | null
+  sessionId?: string | null
+  selectedTypeFullName?: string | null
   onOpenAssemblyPath: (assemblyPath: string) => void
   onSelectType?: (typeFullName: string) => void
   onClose?: () => void
@@ -15,7 +18,7 @@ interface TechnicalDiagramProps {
 interface DiagramNode {
   id: string
   title: string
-  category: 'Service' | 'Database' | 'Batch' | 'Web' | 'Domain' | 'Class'
+  category: 'Service' | 'Database' | 'Batch' | 'Web' | 'Domain' | 'Class' | 'Interface' | 'Struct' | 'Enum' | 'Record' | 'Assembly' | 'Namespace'
   technology: string
   subtitle?: string
   items: string[]
@@ -31,10 +34,10 @@ interface DiagramEdge {
   fromId: string
   toId: string
   label?: string
-  style?: 'inheritance' | 'dependency' | 'data'
+  style?: 'inheritance' | 'implements' | 'dependency' | 'data'
 }
 
-type LayerFilter = 'all' | 'services' | 'databases' | 'batch' | 'classes'
+type LayerFilter = 'all' | 'services' | 'databases' | 'batch' | 'classes' | 'interfaces'
 type EdgeMode = 'focus' | 'all' | 'none'
 
 function formatShortTech(tech: string): string {
@@ -52,6 +55,8 @@ function formatShortTech(tech: string): string {
 export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
   solution,
   assembly,
+  sessionId,
+  selectedTypeFullName,
   onOpenAssemblyPath,
   onSelectType,
   onClose,
@@ -60,14 +65,49 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
   const [filter, setFilter] = useState<LayerFilter>('all')
   const [edgeMode, setEdgeMode] = useState<EdgeMode>('focus')
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const [diagramView, setDiagramView] = useState<'system' | 'graph'>(solution ? 'system' : 'graph')
+  const [showExternal, setShowExternal] = useState<boolean>(false)
+  const [showMinimap, setShowMinimap] = useState<boolean>(true)
+  const [backendGraph, setBackendGraph] = useState<ArchitectureGraphDto | null>(null)
+  const [graphLoading, setGraphLoading] = useState<boolean>(false)
+
+  const canvasScrollRef = useRef<HTMLDivElement>(null)
+
+  // Caricamento del grafo architetturale remoto se sessionId è disponibile
+  useEffect(() => {
+    if (!sessionId) {
+      setBackendGraph(null)
+      return
+    }
+
+    let isMounted = true
+    setGraphLoading(true)
+
+    fetch(`/api/assemblies/${sessionId}/graph?includeReferences=true&includeExternal=${showExternal}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (isMounted && data) {
+          setBackendGraph(data)
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) setGraphLoading(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [sessionId, showExternal])
 
   // Costruzione dei nodi e degli archi del Disegno Tecnico
   const { nodes, edges } = useMemo(() => {
     const nList: DiagramNode[] = []
     const eList: DiagramEdge[] = []
 
-    // 1. SE C'È UNA SOLUTION CARICATA: DISEGNO TECNICO DI SISTEMA
-    if (solution) {
+    // 1. MODALITÀ SISTEMA: ARCHITETTURA SOLUTION (Web, Microservizi, Database, Batch)
+    if (diagramView === 'system' && solution) {
       const colWidth = 290
       const rowGap = 30
       const colGap = 110
@@ -184,7 +224,7 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
         })
       })
 
-      // Servizi -> Database (collegamento solo in caso di dipendenza reale di progetto o modulo)
+      // Servizi -> Database
       solution.services.forEach(svc => {
         const svcProject = solution.projects.find(p => p.name.toLowerCase() === svc.projectName.toLowerCase())
         solution.databases.forEach(db => {
@@ -208,7 +248,7 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
         })
       })
 
-      // Batch -> Database (collegamento solo in caso di dipendenza reale o modulo)
+      // Batch -> Database
       solution.batchWorkers.forEach(b => {
         const batchProject = solution.projects.find(p => p.name.toLowerCase() === b.projectName.toLowerCase())
         solution.databases.forEach(db => {
@@ -232,21 +272,80 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
         })
       })
     }
-    // 2. SE È CARICATO UN SINGOLO ASSEMBLY: CLASS DIAGRAM TECNICO (Padri & Figli)
+    // 2. MODALITÀ GRAFO CLI: GRAFO ARCHITETTURALE INTERATTIVO (Tipi, Interfacce, Dipendenze)
+    else if (backendGraph && backendGraph.nodes.length > 0) {
+      const colWidth = 260
+      const colHeight = 110
+      const colsCount = 4
+      const spacingX = 330
+      const spacingY = 160
+
+      // Filtra i nodi Assembly o Namespace puri se non richiesti per chiarezza
+      const typeNodes = backendGraph.nodes.filter(n => n.kind !== 'Assembly' && n.kind !== 'Namespace')
+
+      typeNodes.forEach((node, idx) => {
+        const col = idx % colsCount
+        const row = Math.floor(idx / colsCount)
+        const posX = 40 + col * spacingX
+        const posY = 40 + row * spacingY
+
+        const kindCategory = (
+          node.kind === 'Interface' ? 'Interface' :
+          node.kind === 'Struct' ? 'Struct' :
+          node.kind === 'Enum' ? 'Enum' :
+          node.kind === 'Record' ? 'Record' : 'Class'
+        ) as DiagramNode['category']
+
+        nList.push({
+          id: node.id,
+          title: node.label,
+          category: kindCategory,
+          technology: `[${node.kind.toUpperCase()}] ${node.metadata['Accessibility'] ?? ''}`.trim(),
+          subtitle: node.namespace || '<Global>',
+          items: node.metadata['IsExternal'] === 'true' ? ['[ESTERNO] Tipo Framework/SDK'] : [],
+          typeFullName: node.id.replace('type:', ''),
+          x: posX,
+          y: posY,
+          width: colWidth,
+          height: colHeight,
+        })
+      })
+
+      // Mappatura archi del backend
+      backendGraph.edges.forEach(edge => {
+        if (edge.relation === 'Declares') return // Evita archi tra namespace e tipi per pulizia visiva
+
+        const style = (
+          edge.relation === 'Inherits' ? 'inheritance' :
+          edge.relation === 'Implements' ? 'implements' :
+          'dependency'
+        ) as DiagramEdge['style']
+
+        eList.push({
+          fromId: edge.source,
+          toId: edge.target,
+          label: edge.label,
+          style,
+        })
+      })
+    }
+    // 3. FALLBACK: ASSEMBLY LOCALE SE GRAFO BACKEND NON ANCORA CARICATO
     else if (assembly) {
-      const typeList = assembly.types.slice(0, 30) // Primi 30 tipi per chiarezza visiva
+      const typeList = assembly.types.slice(0, 35)
       let currX = 40
       let currY = 40
-      const colWidth = 240
+      const colWidth = 260
       const colHeight = 120
 
       typeList.forEach((t, idx) => {
-        const id = `type-${t.fullName}`
+        const id = `type:${t.fullName}`
         const memberItems = t.members.slice(0, 3).map(m => `+ ${m.name}(): ${m.returnTypeOrType}`)
+        const cat = (t.kind === 'Interface' ? 'Interface' : t.kind === 'Struct' ? 'Struct' : t.kind === 'Enum' ? 'Enum' : 'Class') as DiagramNode['category']
+
         nList.push({
           id,
           title: t.name,
-          category: 'Class',
+          category: cat,
           technology: `${t.kind} [${t.accessibility}]`,
           subtitle: t.namespace || '<Global>',
           items: memberItems,
@@ -257,39 +356,76 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
           height: colHeight + Math.min(memberItems.length * 15, 50),
         })
 
-        // Connessione Padre-Figlio
+        // Ereditarietà
         if (t.baseTypeFullName && t.baseTypeFullName !== 'System.Object') {
           const parentMatch = assembly.types.find(p => p.fullName === t.baseTypeFullName || p.name === t.baseTypeFullName)
           if (parentMatch) {
             eList.push({
               fromId: id,
-              toId: `type-${parentMatch.fullName}`,
-              label: 'Eredita da (Figlio -> Padre)',
+              toId: `type:${parentMatch.fullName}`,
+              label: 'inherits',
               style: 'inheritance',
             })
           }
         }
 
-        currX += colWidth + 50
+        // Interfacce
+        t.implementedInterfaces.forEach(iface => {
+          const ifaceMatch = assembly.types.find(p => p.fullName === iface || p.name === iface)
+          if (ifaceMatch) {
+            eList.push({
+              fromId: id,
+              toId: `type:${ifaceMatch.fullName}`,
+              label: 'implements',
+              style: 'implements',
+            })
+          }
+        })
+
+        currX += colWidth + 60
         if ((idx + 1) % 4 === 0) {
           currX = 40
-          currY += 190
+          currY += 200
         }
       })
     }
 
     return { nodes: nList, edges: eList }
-  }, [solution, assembly])
+  }, [solution, assembly, diagramView, backendGraph])
 
-  // Filtraggio per categoria
+  // Sincronizzazione con selectedTypeFullName
+  useEffect(() => {
+    if (selectedTypeFullName && nodes.length > 0) {
+      const match = nodes.find(n => n.typeFullName === selectedTypeFullName || n.title === selectedTypeFullName)
+      if (match) {
+        setSelectedNodeId(match.id)
+      }
+    }
+  }, [selectedTypeFullName, nodes])
+
+  // Filtraggio per categoria e query di ricerca
   const filteredNodes = useMemo(() => {
-    if (filter === 'all') return nodes
-    if (filter === 'services') return nodes.filter(n => n.category === 'Service')
-    if (filter === 'databases') return nodes.filter(n => n.category === 'Database')
-    if (filter === 'batch') return nodes.filter(n => n.category === 'Batch')
-    if (filter === 'classes') return nodes.filter(n => n.category === 'Class')
-    return nodes
+    return nodes.filter(n => {
+      // Filtro per layer
+      if (filter === 'services' && n.category !== 'Service') return false
+      if (filter === 'databases' && n.category !== 'Database') return false
+      if (filter === 'batch' && n.category !== 'Batch') return false
+      if (filter === 'classes' && n.category !== 'Class') return false
+      if (filter === 'interfaces' && n.category !== 'Interface') return false
+
+      return true
+    })
   }, [nodes, filter])
+
+  // Nodi che corrispondono alla ricerca
+  const searchMatches = useMemo(() => {
+    if (!searchQuery.trim()) return []
+    const q = searchQuery.toLowerCase().trim()
+    return filteredNodes.filter(n =>
+      n.title.toLowerCase().includes(q) ||
+      (n.subtitle && n.subtitle.toLowerCase().includes(q))
+    )
+  }, [filteredNodes, searchQuery])
 
   const selectedNode = useMemo(
     () => nodes.find(n => n.id === selectedNodeId) ?? null,
@@ -309,6 +445,12 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
     }
   }, [nodes])
 
+  const handleSelectFirstMatch = () => {
+    if (searchMatches.length > 0) {
+      setSelectedNodeId(searchMatches[0].id)
+    }
+  }
+
   const getCategoryColor = (cat: DiagramNode['category']) => {
     switch (cat) {
       case 'Service':
@@ -319,7 +461,14 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
         return { border: '#994400', bg: '#fff6ed', header: '#994400', text: '#ffffff' }
       case 'Web':
         return { border: '#550055', bg: '#faedfa', header: '#550055', text: '#ffffff' }
-      case 'Domain':
+      case 'Interface':
+        return { border: '#660066', bg: '#fdf2ff', header: '#660066', text: '#ffffff' }
+      case 'Struct':
+        return { border: '#005533', bg: '#f0faf4', header: '#005533', text: '#ffffff' }
+      case 'Enum':
+        return { border: '#774400', bg: '#fff8ee', header: '#774400', text: '#ffffff' }
+      case 'Record':
+        return { border: '#004466', bg: '#f0f8ff', header: '#004466', text: '#ffffff' }
       case 'Class':
       default:
         return { border: '#333333', bg: '#f8f9fa', header: '#444444', text: '#ffffff' }
@@ -349,10 +498,29 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
           padding: '4px 8px',
           marginBottom: '4px',
           fontSize: '11px',
+          flexWrap: 'wrap',
+          gap: '6px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <strong>[DISEGNO TECNICO ARCHITETTURALE]</strong>
+
+          {solution && (
+            <button
+              onClick={() => setDiagramView(v => v === 'system' ? 'graph' : 'system')}
+              style={{
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                padding: '2px 6px',
+                fontSize: '11px',
+                backgroundColor: diagramView === 'graph' ? '#000080' : undefined,
+                color: diagramView === 'graph' ? '#fff' : undefined,
+              }}
+            >
+              {diagramView === 'system' ? 'Mostra Grafo Dipendenze CLI >>' : '<< Torna a Mappa Sistema'}
+            </button>
+          )}
+
           <span>|</span>
           <label>Filtro Layer:</label>
           <select
@@ -361,11 +529,17 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
             style={{ fontSize: '11px' }}
           >
             <option value="all">Tutti i Componenti ({nodes.length})</option>
-            <option value="services">Microservizi &amp; WCF/REST</option>
-            <option value="databases">Database &amp; Tabelle EF/SQL</option>
-            <option value="batch">Processi Batch &amp; Worker</option>
-            {assembly && <option value="classes">Class Diagram (Padri/Figli)</option>}
+            {diagramView === 'system' && (
+              <>
+                <option value="services">Microservizi &amp; WCF/REST</option>
+                <option value="databases">Database &amp; Tabelle EF/SQL</option>
+                <option value="batch">Processi Batch &amp; Worker</option>
+              </>
+            )}
+            <option value="classes">Solo Classi</option>
+            <option value="interfaces">Solo Interfacce</option>
           </select>
+
           <span>|</span>
           <label>Connessioni:</label>
           <select
@@ -377,16 +551,45 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
             <option value="all">[Tutte] Mostra Connessioni</option>
             <option value="none">[Nessuna] Solo Blocchi CAD</option>
           </select>
+
+          {diagramView === 'graph' && sessionId && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: '3px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={showExternal}
+                onChange={e => setShowExternal(e.target.checked)}
+              />
+              Includi Tipi Esterni
+            </label>
+          )}
         </div>
 
+        {/* Ricerca e Zoom */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+            <span style={{ fontSize: '10px' }}>Trova:</span>
+            <input
+              type="text"
+              placeholder="Nome tipo..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSelectFirstMatch()}
+              style={{ fontSize: '11px', width: '110px', padding: '1px 3px' }}
+            />
+            {searchQuery && (
+              <span style={{ fontSize: '10px', color: searchMatches.length > 0 ? '#006600' : '#880000', fontWeight: 'bold' }}>
+                ({searchMatches.length})
+              </span>
+            )}
+          </div>
+
           <button
             onClick={() => setZoom(z => Math.max(0.4, Number((z - 0.15).toFixed(2))))}
             style={{ padding: '1px 6px', fontSize: '11px', cursor: 'pointer' }}
           >
             [-] Zoom
           </button>
-          <span style={{ fontFamily: 'monospace', minWidth: '40px', textAlign: 'center' }}>
+          <span style={{ fontFamily: 'monospace', minWidth: '38px', textAlign: 'center' }}>
             {Math.round(zoom * 100)}%
           </span>
           <button
@@ -397,24 +600,31 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
           </button>
           <button
             onClick={() => setZoom(1)}
-            style={{ padding: '1px 8px', fontSize: '11px', cursor: 'pointer' }}
+            style={{ padding: '1px 6px', fontSize: '11px', cursor: 'pointer' }}
           >
             1:1 Reset
           </button>
           {onClose && (
             <button
               onClick={onClose}
-              style={{ padding: '1px 8px', fontSize: '11px', cursor: 'pointer', marginLeft: '6px' }}
+              style={{ padding: '1px 8px', fontSize: '11px', cursor: 'pointer', marginLeft: '4px' }}
             >
-              Chiudi Disegno
+              Chiudi
             </button>
           )}
         </div>
       </div>
 
+      {graphLoading && (
+        <div style={{ backgroundColor: '#ffffe0', border: '1px solid #999', padding: '2px 8px', fontSize: '11px', marginBottom: '2px' }}>
+          Calcolo relazioni grafo architetturale in corso...
+        </div>
+      )}
+
       {/* Area del Canvas a foglio millimetrato tecnico */}
-      <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
         <div
+          ref={canvasScrollRef}
           style={{
             flex: 1,
             overflow: 'auto',
@@ -476,7 +686,18 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                     markerHeight="7"
                     orient="auto-start-reverse"
                   >
-                    <polygon points="0,0 10,5 0,10" fill="#fff" stroke="#333" strokeWidth="1.5" />
+                    <polygon points="0,0 10,5 0,10" fill="#fff" stroke="#000080" strokeWidth="1.5" />
+                  </marker>
+                  <marker
+                    id="arrow-implements"
+                    viewBox="0 0 10 10"
+                    refX="10"
+                    refY="5"
+                    markerWidth="7"
+                    markerHeight="7"
+                    orient="auto-start-reverse"
+                  >
+                    <polygon points="0,0 10,5 0,10" fill="#fff" stroke="#880088" strokeWidth="1.5" />
                   </marker>
                   <marker
                     id="arrow-highlight"
@@ -502,13 +723,11 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                   const toCenterX = targetNode.x + targetNode.width / 2
 
                   if (toCenterX >= fromCenterX) {
-                    // Target a destra: esce dal bordo destro di source, entra nel bordo sinistro di target
                     x1 = sourceNode.x + sourceNode.width
                     y1 = sourceNode.y + sourceNode.height / 2
                     x2 = targetNode.x
                     y2 = targetNode.y + targetNode.height / 2
                   } else {
-                    // Target a sinistra: esce dal bordo sinistro di source, entra nel bordo destro di target (es. Batch -> Database)
                     x1 = sourceNode.x
                     y1 = sourceNode.y + sourceNode.height / 2
                     x2 = targetNode.x + targetNode.width
@@ -519,6 +738,7 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                   const pathData = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`
 
                   const isInherit = e.style === 'inheritance'
+                  const isImplements = e.style === 'implements'
                   const isConnectedToSelected = selectedNodeId === e.fromId || selectedNodeId === e.toId
                   const isHighlight = isConnectedToSelected
 
@@ -535,10 +755,10 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                   const strokeWidth = isHighlight ? 2.5 : 1.2
                   const strokeColor = isHighlight
                     ? '#0000ff'
-                    : (isInherit ? '#555555' : e.style === 'data' ? '#006633' : '#000080')
+                    : (isInherit ? '#000080' : isImplements ? '#880088' : e.style === 'data' ? '#006633' : '#336699')
                   const markerId = isHighlight
                     ? 'url(#arrow-highlight)'
-                    : (isInherit ? 'url(#arrow-inherit)' : 'url(#arrow-tech)')
+                    : (isInherit ? 'url(#arrow-inherit)' : isImplements ? 'url(#arrow-implements)' : 'url(#arrow-tech)')
 
                   const showLabel = isHighlight || (edgeMode === 'all' && edges.length <= 6)
 
@@ -549,7 +769,7 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                         fill="none"
                         stroke={strokeColor}
                         strokeWidth={strokeWidth}
-                        strokeDasharray={isInherit ? '4 2' : 'none'}
+                        strokeDasharray={isImplements ? '4 3' : 'none'}
                         markerEnd={markerId}
                       />
                       {e.label && showLabel && (
@@ -588,6 +808,10 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
             {/* Render dei Blocchi Nodi del Disegno Tecnico */}
             {filteredNodes.map(node => {
               const isSelected = selectedNodeId === node.id
+              const isMatched = searchQuery.trim() !== '' && (
+                node.title.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
+                (node.subtitle && node.subtitle.toLowerCase().includes(searchQuery.toLowerCase().trim()))
+              )
               const colors = getCategoryColor(node.category)
 
               return (
@@ -601,8 +825,16 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                     width: `${node.width}px`,
                     minHeight: `${node.height}px`,
                     backgroundColor: colors.bg,
-                    border: isSelected ? '2px solid #ff0000' : `2px solid ${colors.border}`,
-                    boxShadow: isSelected ? '0 0 6px rgba(255,0,0,0.6)' : '2px 2px 0px rgba(0,0,0,0.15)',
+                    border: isSelected
+                      ? '2px solid #ff0000'
+                      : isMatched
+                      ? '2px solid #ffaa00'
+                      : `2px solid ${colors.border}`,
+                    boxShadow: isSelected
+                      ? '0 0 6px rgba(255,0,0,0.6)'
+                      : isMatched
+                      ? '0 0 5px rgba(255,170,0,0.5)'
+                      : '2px 2px 0px rgba(0,0,0,0.15)',
                     cursor: 'pointer',
                     fontSize: '11px',
                     boxSizing: 'border-box',
@@ -708,6 +940,65 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
           </div>
         </div>
 
+        {/* Minimappa CAD Windows 98 Flottante */}
+        {showMinimap && nodes.length > 0 && (
+          <div
+            style={{
+              position: 'absolute',
+              right: selectedNode ? '312px' : '12px',
+              bottom: '12px',
+              width: '150px',
+              backgroundColor: '#dfdfdf',
+              border: '2px groove #fff',
+              boxShadow: '2px 2px 4px rgba(0,0,0,0.3)',
+              zIndex: 10,
+              display: 'flex',
+              flexDirection: 'column',
+              boxSizing: 'border-box',
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: '#000080',
+                color: '#fff',
+                padding: '2px 4px',
+                fontSize: '9px',
+                fontWeight: 'bold',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <span>Minimappa CAD</span>
+              <button
+                onClick={() => setShowMinimap(false)}
+                style={{ padding: '0 2px', fontSize: '8px', cursor: 'pointer', height: '12px', lineHeight: '10px' }}
+              >
+                x
+              </button>
+            </div>
+            <div style={{ padding: '4px', backgroundColor: '#e6eaee', position: 'relative', height: '90px' }}>
+              <svg width="100%" height="100%" viewBox={`0 0 ${canvasBounds.width} ${canvasBounds.height}`}>
+                {filteredNodes.map(n => {
+                  const isSel = n.id === selectedNodeId
+                  return (
+                    <rect
+                      key={`mini-${n.id}`}
+                      x={n.x}
+                      y={n.y}
+                      width={n.width}
+                      height={n.height}
+                      fill={isSel ? '#ff0000' : '#4466aa'}
+                      stroke={isSel ? '#ffffff' : '#223366'}
+                      strokeWidth={isSel ? 30 : 10}
+                    />
+                  )
+                })}
+              </svg>
+            </div>
+          </div>
+        )}
+
         {/* Riquadro Dettaglio Tecnico Laterale Win98 */}
         {selectedNode && (
           <div
@@ -721,6 +1012,7 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
               boxSizing: 'border-box',
               overflowY: 'auto',
               fontSize: '11px',
+              zIndex: 5,
             }}
           >
             <div

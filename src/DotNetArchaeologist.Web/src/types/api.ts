@@ -163,3 +163,28 @@ export interface SolutionDescriptor {
   totalDatabases: number
   totalBatchWorkers: number
 }
+
+export type RelationKind = 'Inherits' | 'Implements' | 'References' | 'Calls' | 'Declares'
+
+export interface GraphNodeDto {
+  id: string
+  label: string
+  kind: string
+  namespace: string | null
+  metadata: Record<string, string>
+}
+
+export interface GraphEdgeDto {
+  id: string
+  source: string
+  target: string
+  relation: RelationKind
+  label: string
+}
+
+export interface ArchitectureGraphDto {
+  nodes: GraphNodeDto[]
+  edges: GraphEdgeDto[]
+  totalNodes: number
+  totalEdges: number
+}

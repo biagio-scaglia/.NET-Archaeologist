@@ -52,35 +52,38 @@ L'architettura è suddivisa in una parte **Backend** (.NET / C#) e una parte **F
 - **Scopo**: Libreria pura contenente i contratti e i modelli di dominio.
 - **Dipendenze**: Nessuna dipendenza da framework esterni o librerie di terze parti.
 - **Responsabilità**:
-  - Definizione delle entità: `AssemblyMetadata`, `TypeDefinitionModel`, `MemberDescriptor`, `RelationshipType`.
+  - Definizione delle entità: `AssemblyDescriptor`, `TypeDescriptor`, `MemberDescriptor`, `ParameterDescriptor`.
+  - Definizione della Solution e dei ruoli: `SolutionDescriptor`, `SolutionProjectDescriptor`, `DiscoveredServiceDescriptor`, `DiscoveredDatabaseDescriptor`, `DiscoveredBatchWorkerDescriptor`.
   - Definizione delle strutture del grafo: `ArchitectureGraph`, `GraphNode`, `GraphEdge`.
-  - Definizione delle interfacce dei servizi: `IAssemblyReader`, `IDecompilerService`.
+  - Definizione delle interfacce dei servizi: `IAssemblyInspector`, `IDecompilerService`, `ISolutionInspector`, `IArchitectureGraphBuilder`.
 
 ### 2.2 `DotNetArchaeologist.Analysis`
-- **Scopo**: Implementazione dei motori di analisi statica e decompilazione.
+- **Scopo**: Implementazione dei motori di analisi statica, decompilazione e archeologia delle Solution.
 - **Dipendenze**: `DotNetArchaeologist.Core`, `System.Reflection.Metadata`, `ICSharpCode.Decompiler`.
 - **Responsabilità**:
-  - `MetadataAssemblyReader`: legge tabelle di metadati CLI (TypeDef, TypeRef, MemberRef, MethodDef, InterfaceImpl) mediante `System.Reflection.Metadata.MetadataReader` in modo non bloccante.
-  - `ILDecompilerService`: utilizza `CSharpDecompiler` di ILSpy per decompilare tipi, metodi o interi assembly in codice sorgente C# formattato.
+  - `MetadataAssemblyInspector`: legge tabelle di metadati CLI (TypeDef, TypeRef, MemberRef, MethodDef, InterfaceImpl) mediante `System.Reflection.Metadata.MetadataReader` in modo non bloccante a Zero-Execution.
+  - `CSharpDecompilerService`: utilizza `CSharpDecompiler` di ILSpy per decompilare tipi, metodi o interi assembly in codice sorgente C# formattato.
+  - `SolutionInspector`: analizza il file `.sln` e i progetti `.csproj`, localizza i binari compilati e classifica automaticamente i ruoli architetturali del sistema (Microservizi WCF/REST, Database/Stored Procedure, Processi Batch, Dominio di Business).
   - Costruzione delle relazioni (ereditarietà, implementazione di interfacce, chiamate di metodo, uso di tipi).
 
 ### 2.3 `DotNetArchaeologist.Api`
 - **Scopo**: API HTTP locale per esporre le funzionalità al frontend.
 - **Dipendenze**: `DotNetArchaeologist.Analysis`, `DotNetArchaeologist.Core`, ASP.NET Core.
 - **Responsabilità**:
-  - Esposizione di endpoint REST / Minimal API vincolati all'indirizzo di loopback (`127.0.0.1`).
-  - Gestione del ciclo di vita delle sessioni di analisi (apertura file, rilascio stream).
+  - Esposizione di endpoint REST / Minimal API vincolati all'indirizzo di loopback (`127.0.0.1` su porta `5123`).
+  - Endpoint `POST /api/solution/inspect`: ispezione architetturale completa di una solution o cartella di progetto.
+  - Gestione del ciclo di vita delle sessioni di analisi (apertura file, session store in memoria thread-safe).
   - Serializzazione JSON ottimizzata per strutture gerarchiche e grafi.
   - Validazione rigorosa degli input (percorsi di file locali, sanitizzazione).
 
 ### 2.4 `DotNetArchaeologist.Web`
-- **Scopo**: Interfaccia utente web per l'esplorazione visiva.
-- **Dipendenze**: React 19, TypeScript, Vite, React Flow, Lucide Icons.
+- **Scopo**: Interfaccia utente web per l'esplorazione visiva, con estetica autentica Windows 98 (`98.css`).
+- **Dipendenze**: React 19, TypeScript, Vite, `98.css`.
 - **Responsabilità**:
+  - **Solution Overview**: pannello a schede Windows 98 per esplorare Microservizi WCF/REST, Database DbContext/Repository/Stored Procedure, Processi Batch e Grafo delle dipendenze dei progetti.
   - **Assembly Explorer**: albero gerarchico (Namespaces -> Tipi -> Membri).
-  - **Decompiler View**: visualizzazione del codice C# decompilato con syntax highlighting e navigazione ipertestuale dei tipi.
-  - **Graph Canvas**: grafo interattivo delle dipendenze e delle relazioni (React Flow) con filtro per livello di granularità (Assembly, Type, Method).
-  - **Metadata Inspector**: visualizzazione grezza dei metadati, flag IL, attributi e dipendenze esterne.
+  - **Decompiler View**: visualizzazione del codice C# decompilato con copia istantanea e decompilazione intero modulo o singolo metodo.
+  - **Metadata Inspector**: visualizzazione dei metadati, modificatori CLI, tipo base, interfacce implementate e membri.
 
 ---
 

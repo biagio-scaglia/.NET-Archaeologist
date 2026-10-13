@@ -91,3 +91,75 @@ export interface InspectFolderResponse {
   totalFound: number
   assemblies: DiscoveredAssemblyItem[]
 }
+
+export interface ServiceEndpointDescriptor {
+  name: string
+  httpMethodOrContract: string | null
+  routeOrAction: string | null
+  returnType: string | null
+  parameters: string[]
+}
+
+export interface DiscoveredServiceDescriptor {
+  serviceName: string
+  projectName: string
+  technology: string
+  contractInterface: string | null
+  implementationType: string | null
+  assemblyPath: string | null
+  endpoints: ServiceEndpointDescriptor[]
+}
+
+export interface DiscoveredDatabaseDescriptor {
+  name: string
+  projectName: string
+  technology: string
+  baseTypeOrPattern: string | null
+  assemblyPath: string | null
+  entitiesOrTables: string[]
+  detectedStoredProceduresOrQueries: string[]
+}
+
+export interface DiscoveredBatchWorkerDescriptor {
+  workerName: string
+  projectName: string
+  technology: string
+  entryPointOrJobClass: string | null
+  assemblyPath: string | null
+  triggersOrSchedules: string[]
+}
+
+export interface DiscoveredDomainComponentDescriptor {
+  name: string
+  projectName: string
+  category: string
+  assemblyPath: string | null
+  totalTypes: number
+  sampleTypes: string[]
+}
+
+export interface SolutionProjectDescriptor {
+  name: string
+  projectPath: string
+  relativePath: string
+  outputAssemblyPath: string | null
+  assemblyExists: boolean
+  category: 'Service' | 'Database' | 'Batch' | 'Web' | 'Domain' | 'Test' | 'Library'
+  projectReferences: string[]
+  packageReferences: string[]
+  detectedTechnologies: string[]
+}
+
+export interface SolutionDescriptor {
+  name: string
+  solutionPath: string
+  projects: SolutionProjectDescriptor[]
+  services: DiscoveredServiceDescriptor[]
+  databases: DiscoveredDatabaseDescriptor[]
+  batchWorkers: DiscoveredBatchWorkerDescriptor[]
+  domainComponents: DiscoveredDomainComponentDescriptor[]
+  totalProjects: number
+  totalServices: number
+  totalDatabases: number
+  totalBatchWorkers: number
+}

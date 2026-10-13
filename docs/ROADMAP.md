@@ -115,6 +115,26 @@ Questo documento definisce le milestone di sviluppo di **.NET Archaeologist**, o
 
 ---
 
+## Milestone 3.5: Archeologia di Solution (.sln) & Mappa di Sistema (Stato: Completata)
+**Obiettivo**: Consentire l'apertura diretta di file Solution (`.sln`) o cartelle di progetto e identificare automaticamente la mappa architetturale del sistema: Microservizi/API, Database/Stored Procedure, Processi Batch e dipendenze proprietarie.
+
+- [x] Contratti di dominio per Solution e ruoli architetturali (`ISolutionInspector`, `SolutionDescriptor`, `ComponentCategory`).
+- [x] Motore di analisi `SolutionInspector`:
+  - Parsing del file `.sln` ed estrazione dei progetti di codice (`.csproj`).
+  - Parsing dei metadati di progetto (ProjectReference, PackageReference, OutputType, tecnologie).
+  - Localizzazione automatica dei binari compilati in `bin/` (`.dll` o `.exe`).
+  - Ispezione statica dei metadati ECMA-335 a Zero-Execution per categorizzare:
+    - **Servizi & Microservizi**: contratti WCF SOAP (`[ServiceContract]`, `[MessageContract]`), controller ASP.NET Web API (REST) ed endpoint/operazioni esposte.
+    - **Database & Persistenza**: contesti Entity Framework (`DbContext`, `ObjectContext`), pattern `Repository`, tabelle/entità mappate e rilevamento Stored Procedure / query SQL.
+    - **Processi Batch & Workers**: applicazioni console, job schedulati, trigger ed entry point di esecuzione.
+    - **Dominio & Modelli**: moduli condivisi e librerie di logica di business.
+- [x] Endpoint backend dedicato `POST /api/solution/inspect`.
+- [x] Componente frontend Windows 98 `SolutionOverview` con navigazione a schede (`[SVC]`, `[DB]`, `[BAT]`, `[PRJ]`) e pulsanti per passare all'istante alla decompilazione di qualsiasi componente.
+- [x] Aggiornamento della finestra `OpenDialog` con la modalità Solution come prima scheda consigliata.
+- [x] Suite di test automatizzati (37/37 superati: 26 xUnit backend + 11 Vitest frontend).
+
+---
+
 ## Milestone 4: Grafo Architetturale Interattivo (React Flow)
 **Obiettivo**: Ricostruire e visualizzare le relazioni tra componenti in un grafo interattivo.
 

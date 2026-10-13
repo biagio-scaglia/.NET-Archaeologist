@@ -156,4 +156,28 @@ public sealed class AssemblyApiTests : IClassFixture<WebApplicationFactory<Progr
             }
         }
     }
+
+    [Fact]
+    public async Task InspectSolution_ReturnsBadRequest_WhenPathEmpty()
+    {
+        var content = new StringContent(
+            JsonSerializer.Serialize(new { solutionOrFolderPath = "" }),
+            System.Text.Encoding.UTF8,
+            "application/json");
+
+        var response = await _client.PostAsync("/api/solution/inspect", content);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task InspectSolution_ReturnsNotFound_WhenPathDoesNotExist()
+    {
+        var content = new StringContent(
+            JsonSerializer.Serialize(new { solutionOrFolderPath = @"C:\Fake\NonExistentPath.sln" }),
+            System.Text.Encoding.UTF8,
+            "application/json");
+
+        var response = await _client.PostAsync("/api/solution/inspect", content);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
 }

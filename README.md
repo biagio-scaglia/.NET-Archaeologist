@@ -9,9 +9,10 @@
 **.NET Archaeologist** e uno strumento desktop/locale open source progettato per ingegneri del software, architetti e ricercatori di sicurezza che devono esplorare, comprendere e mappare assembly .NET (DLL, EXE) senza dover eseguire il binario analizzato.
 
 L'applicazione consente di:
+- **Mappare intere Solution .NET (.sln)**: identifica automaticamente i **Microservizi / Servizi WCF / REST**, i componenti **Database (DbContext, Repository, Stored Procedure)**, i **Processi Batch** e le dipendenze tra progetti proprietari da un singolo file o cartella.
 - **Esplorare i metadati .NET** a basso livello (assembly, moduli, tipi, interfacce, metodi, attributi e referenze).
-- **Decompilare codice C#** in modo trasparente e performante sfruttando `ICSharpCode.Decompiler` (motore di ILSpy).
-- **Visualizzare grafi interattivi** dell'architettura e del flusso delle dipendenze con [React Flow](https://reactflow.dev/).
+- **Decompilare codice C#** in modo trasparente e performante sfruttando `ICSharpCode.Decompiler` (motore di ILSpy), con navigazione fluida dalla mappa architetturale al singolo metodo.
+- **Visualizzare l'architettura del sistema** attraverso un'interfaccia classica Windows 98 (`98.css`) senza distrazioni e 100% offline.
 - **Condurre investigazioni assistite da evidenze** con supporto all'analisi statica e cooperazione con strumenti avanzati (come REA per l'agente AI).
 - **Esportare report tecnici** in formato Markdown leggibili e condivisibili.
 

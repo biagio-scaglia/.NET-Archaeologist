@@ -37,6 +37,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddSingleton<IAssemblyInspector, MetadataAssemblyInspector>();
 builder.Services.AddSingleton<IDecompilerService, CSharpDecompilerService>();
 builder.Services.AddSingleton<IArchitectureGraphBuilder, ArchitectureGraphBuilder>();
+builder.Services.AddSingleton<ISolutionInspector, SolutionInspector>();
 builder.Services.AddSingleton<IAssemblySessionStore, InMemoryAssemblySessionStore>();
 
 var app = builder.Build();
@@ -302,10 +303,38 @@ app.MapGet("/api/assemblies/{sessionId}/decompile", async (
     }
 });
 
+// Ispezione Solution (.sln) o cartella con mappatura architetturale
+app.MapPost("/api/solution/inspect", async (
+    InspectSolutionRequest request,
+    ISolutionInspector solutionInspector,
+    CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(request.SolutionOrFolderPath))
+    {
+        return Results.BadRequest(new { error = "Specificare il percorso del file .sln o della cartella di progetto." });
+    }
+
+    try
+    {
+        var solution = await solutionInspector.InspectSolutionAsync(request.SolutionOrFolderPath, ct);
+        return Results.Ok(solution);
+    }
+    catch (FileNotFoundException ex)
+    {
+        return Results.NotFound(new { error = ex.Message });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { error = $"Errore durante l'ispezione della solution: {ex.Message}" });
+    }
+});
+
 app.Run();
 
 // Requisito per WebApplicationFactory nei test xUnit
 public partial class Program { }
+
+public sealed record InspectSolutionRequest(string SolutionOrFolderPath);
 
 public sealed record InspectPathRequest(string FilePath);
 

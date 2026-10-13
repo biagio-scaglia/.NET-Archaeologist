@@ -5,6 +5,7 @@ import type { DiscoveredAssemblyItem, InspectFolderResponse } from '../types/api
 interface OpenDialogProps {
   isOpen: boolean
   onClose: () => void
+  onInspectSolution?: (solutionOrFolderPath: string) => Promise<void>
   onInspectPath: (path: string) => Promise<void>
   onInspectFile: (file: File) => Promise<void>
   loading: boolean
@@ -14,12 +15,14 @@ interface OpenDialogProps {
 export const OpenDialog: React.FC<OpenDialogProps> = ({
   isOpen,
   onClose,
+  onInspectSolution,
   onInspectPath,
   onInspectFile,
   loading,
   errorMessage
 }) => {
-  const [activeTab, setActiveTab] = useState<'folder' | 'path' | 'upload'>('folder')
+  const [activeTab, setActiveTab] = useState<'solution' | 'folder' | 'path' | 'upload'>('solution')
+  const [solutionInputPath, setSolutionInputPath] = useState<string>('')
   const [folderPath, setFolderPath] = useState<string>('')
   const [localPath, setLocalPath] = useState<string>('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -64,7 +67,10 @@ export const OpenDialog: React.FC<OpenDialogProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (activeTab === 'folder') {
+    if (activeTab === 'solution') {
+      if (!solutionInputPath.trim() || !onInspectSolution) return
+      await onInspectSolution(solutionInputPath.trim())
+    } else if (activeTab === 'folder') {
       if (!selectedDiscoveredPath) return
       await onInspectPath(selectedDiscoveredPath)
     } else if (activeTab === 'path') {
@@ -78,17 +84,26 @@ export const OpenDialog: React.FC<OpenDialogProps> = ({
 
   return (
     <div className="dialog-overlay">
-      <div className="window dialog-window" style={{ width: 620 }}>
-        <TitleBar title="Apri Assembly .NET / Cartella Progetto" onClose={onClose} />
+      <div className="window dialog-window" style={{ width: 640 }}>
+        <TitleBar title="Apri Solution .NET / Cartella Progetto" onClose={onClose} />
         <div className="window-body">
           <menu role="tablist">
+            <li role="tab" aria-selected={activeTab === 'solution'}>
+              <button
+                type="button"
+                onClick={() => setActiveTab('solution')}
+                style={{ cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                [SLN] Solution .NET (.sln)
+              </button>
+            </li>
             <li role="tab" aria-selected={activeTab === 'folder'}>
               <button
                 type="button"
                 onClick={() => setActiveTab('folder')}
                 style={{ cursor: 'pointer' }}
               >
-                Cartella Progetto
+                [DIR] Esplora Cartella DLL
               </button>
             </li>
             <li role="tab" aria-selected={activeTab === 'path'}>
@@ -97,7 +112,7 @@ export const OpenDialog: React.FC<OpenDialogProps> = ({
                 onClick={() => setActiveTab('path')}
                 style={{ cursor: 'pointer' }}
               >
-                Percorso File Singolo
+                [FIL] Percorso File Singolo
               </button>
             </li>
             <li role="tab" aria-selected={activeTab === 'upload'}>
@@ -106,14 +121,43 @@ export const OpenDialog: React.FC<OpenDialogProps> = ({
                 onClick={() => setActiveTab('upload')}
                 style={{ cursor: 'pointer' }}
               >
-                Carica File
+                [UPL] Carica File
               </button>
             </li>
           </menu>
 
           <div className="window" role="tabpanel" style={{ padding: 12, marginTop: -2 }}>
             <form onSubmit={handleSubmit}>
-              {activeTab === 'folder' ? (
+              {activeTab === 'solution' ? (
+                <div>
+                  <p style={{ margin: '0 0 6px 0', fontWeight: 'bold', color: '#000080' }}>
+                    Mappa Automatica dell'Architettura da Solution (.sln):
+                  </p>
+                  <p style={{ margin: '0 0 10px 0', fontSize: 11, color: '#333' }}>
+                    Inserisci il percorso del file <strong>.sln</strong> o della cartella principale del progetto.
+                    .NET Archaeologist identificherà automaticamente i <strong>Microservizi / Servizi WCF / REST</strong>,
+                    i moduli <strong>Database (DbContext, Repository, Stored Procedure)</strong>, i <strong>Processi Batch</strong> e
+                    le dipendenze tra progetti.
+                  </p>
+                  <div className="field-row-stacked" style={{ marginBottom: 12 }}>
+                    <label htmlFor="solutionPathInput" style={{ fontWeight: 'bold' }}>
+                      Percorso Solution (.sln) o Cartella Progetto:
+                    </label>
+                    <input
+                      id="solutionPathInput"
+                      type="text"
+                      value={solutionInputPath}
+                      onChange={(e) => setSolutionInputPath(e.target.value)}
+                      placeholder="C:\Users\...\cartella\gest-pdc o GestPdC.sln"
+                      style={{ width: '100%', boxSizing: 'border-box' }}
+                      disabled={loading}
+                    />
+                  </div>
+                  <div style={{ backgroundColor: '#ffffe1', border: '1px solid #d4c88b', padding: '6px 8px', fontSize: 11, marginBottom: 8 }}>
+                    <strong>Suggerimento:</strong> Puoi incollare direttamente la cartella principale del progetto. Se presente, il file .sln verrà rilevato automaticamente!
+                  </div>
+                </div>
+              ) : activeTab === 'folder' ? (
                 <div>
                   <p style={{ margin: '0 0 8px 0' }}>
                     Inserisci il percorso della cartella del progetto contenente le DLL:
@@ -244,15 +288,17 @@ export const OpenDialog: React.FC<OpenDialogProps> = ({
                   type="submit"
                   disabled={
                     loading ||
-                    (activeTab === 'folder'
+                    (activeTab === 'solution'
+                      ? !solutionInputPath.trim()
+                      : activeTab === 'folder'
                       ? !selectedDiscoveredPath
                       : activeTab === 'path'
                       ? !localPath.trim()
                       : !selectedFile)
                   }
-                  style={{ minWidth: 70 }}
+                  style={{ minWidth: 80, fontWeight: 'bold' }}
                 >
-                  {loading ? 'Lettura...' : 'Apri'}
+                  {loading ? 'Analisi...' : (activeTab === 'solution' ? 'Mappa Solution' : 'Apri')}
                 </button>
                 <button
                   type="button"

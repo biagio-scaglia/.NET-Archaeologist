@@ -49,17 +49,21 @@ Questo documento definisce le milestone di sviluppo di **.NET Archaeologist**, o
 
 ---
 
-## Milestone 1: Solution .NET e Core Metadata Engine
+## Milestone 1: Solution .NET e Core Metadata Engine (Stato: Completata)
 **Obiettivo**: Creare la Solution .NET e implementare la lettura passiva dei metadati CLI tramite `System.Reflection.Metadata`.
 
-- [ ] Creazione della solution `DotNetArchaeologist.sln`.
-- [ ] Creazione del progetto `DotNetArchaeologist.Core` (modelli di dominio ed entità immutabili).
-- [ ] Creazione del progetto `DotNetArchaeologist.Analysis` con parser `MetadataReader`.
+- [x] Creazione della solution `DotNetArchaeologist.slnx` (.NET 8).
+- [x] Creazione del progetto `DotNetArchaeologist.Core` (modelli di dominio ed entità immutabili).
+- [x] Creazione del progetto `DotNetArchaeologist.Analysis` con parser `MetadataReader`.
   - Ispezione intestazioni PE e metadati ECMA-335.
-  - Estrazione di nomi di assembly, moduli e target runtime.
-  - Mappatura di Namespace, `TypeDefinition`, `MethodDefinition`, `FieldDefinition`.
-- [ ] Creazione del progetto di test `DotNetArchaeologist.Analysis.Tests` (xUnit).
-  - Test automatizzati su assembly noti (o compilati in-memory tramite Roslyn durante i test).
+  - Estrazione di nomi di assembly, moduli, MVID e target framework.
+  - Mappatura di Namespace, tipi (`Class`, `Interface`, `Struct`, `Enum`, `Delegate`, `Record`), membri e parametri.
+  - Costruzione del grafo architetturale (`ArchitectureGraphBuilder`).
+- [x] Creazione del progetto di test `DotNetArchaeologist.Core.Tests` (xUnit).
+- [x] Creazione del progetto di test `DotNetArchaeologist.Analysis.Tests` (xUnit).
+  - Test automatizzati su assembly in-memory compilati con Roslyn.
+  - Test di conformità Zero-Execution (`IsolatedSecurityCheckAssembly`).
+- [x] Script di automazione dei test (`scripts/run-tests.ps1`) e audit di sicurezza (`scripts/verify-offline-safety.ps1`).
 
 **Criteri di verifica**:
 - `dotnet build` completa senza warning o errori.

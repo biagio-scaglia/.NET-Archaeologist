@@ -35,6 +35,7 @@ interface DiagramEdge {
 }
 
 type LayerFilter = 'all' | 'services' | 'databases' | 'batch' | 'classes'
+type EdgeMode = 'focus' | 'all' | 'none'
 
 export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
   solution,
@@ -45,6 +46,7 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
 }) => {
   const [zoom, setZoom] = useState<number>(1)
   const [filter, setFilter] = useState<LayerFilter>('all')
+  const [edgeMode, setEdgeMode] = useState<EdgeMode>('focus')
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
 
   // Costruzione dei nodi e degli archi del Disegno Tecnico
@@ -56,7 +58,7 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
     if (solution) {
       const colWidth = 260
       const rowGap = 30
-      const colGap = 80
+      const colGap = 110
 
       // Colonna 1: Web & Client (X = 40)
       const webProjects = solution.projects.filter(p => p.category === 'Web')
@@ -147,11 +149,15 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
         yBatch += 130 + Math.min(b.triggersOrSchedules.length * 16, 60) + rowGap
       })
 
-      // Connessioni Tecniche (Archi)
+      // Connessioni Tecniche (Archi mirati basati su dipendenze di progetto reali)
       // Web -> Servizi
       webProjects.forEach(wp => {
         solution.services.forEach(svc => {
-          if (wp.projectReferences.includes(svc.projectName) || svc.projectName.includes('Service') || svc.projectName.includes('Notify')) {
+          if (
+            wp.projectReferences.includes(svc.projectName) ||
+            wp.name === svc.projectName ||
+            svc.projectName.toLowerCase().includes('service')
+          ) {
             eList.push({
               fromId: `web-${wp.name}`,
               toId: `svc-${svc.serviceName}`,
@@ -162,27 +168,43 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
         })
       })
 
-      // Servizi -> Database
+      // Servizi -> Database (collegamento solo in caso di dipendenza reale di progetto o modulo)
       solution.services.forEach(svc => {
+        const svcProject = solution.projects.find(p => p.name === svc.projectName)
         solution.databases.forEach(db => {
-          eList.push({
-            fromId: `svc-${svc.serviceName}`,
-            toId: `db-${db.name}`,
-            label: 'Persistenza / Query',
-            style: 'data',
-          })
+          const isRelated =
+            svc.projectName === db.projectName ||
+            (svcProject?.projectReferences.includes(db.projectName) ?? false) ||
+            (svcProject?.projectReferences.some(pr => pr.toLowerCase().includes('data')) && db.projectName.toLowerCase().includes('data'))
+
+          if (isRelated) {
+            eList.push({
+              fromId: `svc-${svc.serviceName}`,
+              toId: `db-${db.name}`,
+              label: 'Persistenza / Query',
+              style: 'data',
+            })
+          }
         })
       })
 
-      // Batch -> Database
+      // Batch -> Database (collegamento solo in caso di dipendenza reale o modulo)
       solution.batchWorkers.forEach(b => {
+        const batchProject = solution.projects.find(p => p.name === b.projectName)
         solution.databases.forEach(db => {
-          eList.push({
-            fromId: `batch-${b.workerName}`,
-            toId: `db-${db.name}`,
-            label: 'Elaborazione Batch Dati',
-            style: 'data',
-          })
+          const isRelated =
+            b.projectName === db.projectName ||
+            (batchProject?.projectReferences.includes(db.projectName) ?? false) ||
+            (batchProject?.projectReferences.some(pr => pr.toLowerCase().includes('data')) && db.projectName.toLowerCase().includes('data'))
+
+          if (isRelated) {
+            eList.push({
+              fromId: `batch-${b.workerName}`,
+              toId: `db-${db.name}`,
+              label: 'Accesso Dati',
+              style: 'data',
+            })
+          }
         })
       })
     }
@@ -307,6 +329,17 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
             <option value="batch">Processi Batch &amp; Worker</option>
             {assembly && <option value="classes">Class Diagram (Padri/Figli)</option>}
           </select>
+          <span>|</span>
+          <label>Connessioni:</label>
+          <select
+            value={edgeMode}
+            onChange={e => setEdgeMode(e.target.value as EdgeMode)}
+            style={{ fontSize: '11px', fontWeight: 'bold' }}
+          >
+            <option value="focus">[Focus] Nodo Selezionato</option>
+            <option value="all">[Tutte] Mostra Connessioni</option>
+            <option value="none">[Nessuna] Solo Blocchi CAD</option>
+          </select>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -367,82 +400,144 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
             }}
           >
             {/* SVG per le linee di collegamento tecniche */}
-            <svg
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                pointerEvents: 'none',
-              }}
-            >
-              <defs>
-                <marker
-                  id="arrow-tech"
-                  viewBox="0 0 10 10"
-                  refX="10"
-                  refY="5"
-                  markerWidth="6"
-                  markerHeight="6"
-                  orient="auto-start-reverse"
-                >
-                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#000080" />
-                </marker>
-                <marker
-                  id="arrow-inherit"
-                  viewBox="0 0 10 10"
-                  refX="10"
-                  refY="5"
-                  markerWidth="7"
-                  markerHeight="7"
-                  orient="auto-start-reverse"
-                >
-                  <polygon points="0,0 10,5 0,10" fill="#fff" stroke="#333" strokeWidth="1.5" />
-                </marker>
-              </defs>
+            {edgeMode !== 'none' && (
+              <svg
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  pointerEvents: 'none',
+                }}
+              >
+                <defs>
+                  <marker
+                    id="arrow-tech"
+                    viewBox="0 0 10 10"
+                    refX="10"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#000080" />
+                  </marker>
+                  <marker
+                    id="arrow-inherit"
+                    viewBox="0 0 10 10"
+                    refX="10"
+                    refY="5"
+                    markerWidth="7"
+                    markerHeight="7"
+                    orient="auto-start-reverse"
+                  >
+                    <polygon points="0,0 10,5 0,10" fill="#fff" stroke="#333" strokeWidth="1.5" />
+                  </marker>
+                  <marker
+                    id="arrow-highlight"
+                    viewBox="0 0 10 10"
+                    refX="10"
+                    refY="5"
+                    markerWidth="7"
+                    markerHeight="7"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#0000ff" />
+                  </marker>
+                </defs>
 
-              {edges.map((e, idx) => {
-                const sourceNode = filteredNodes.find(n => n.id === e.fromId)
-                const targetNode = filteredNodes.find(n => n.id === e.toId)
-                if (!sourceNode || !targetNode) return null
+                {edges.map((e, idx) => {
+                  const sourceNode = filteredNodes.find(n => n.id === e.fromId)
+                  const targetNode = filteredNodes.find(n => n.id === e.toId)
+                  if (!sourceNode || !targetNode) return null
 
-                const x1 = sourceNode.x + sourceNode.width
-                const y1 = sourceNode.y + sourceNode.height / 2
-                const x2 = targetNode.x
-                const y2 = targetNode.y + targetNode.height / 2
+                  // Calcolo ancoraggi orientati per impedire attraversamenti dei box
+                  let x1: number, y1: number, x2: number, y2: number
+                  const fromCenterX = sourceNode.x + sourceNode.width / 2
+                  const toCenterX = targetNode.x + targetNode.width / 2
 
-                const dx = (x2 - x1) / 2
-                const pathData = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`
+                  if (toCenterX >= fromCenterX) {
+                    // Target a destra: esce dal bordo destro di source, entra nel bordo sinistro di target
+                    x1 = sourceNode.x + sourceNode.width
+                    y1 = sourceNode.y + sourceNode.height / 2
+                    x2 = targetNode.x
+                    y2 = targetNode.y + targetNode.height / 2
+                  } else {
+                    // Target a sinistra: esce dal bordo sinistro di source, entra nel bordo destro di target (es. Batch -> Database)
+                    x1 = sourceNode.x
+                    y1 = sourceNode.y + sourceNode.height / 2
+                    x2 = targetNode.x + targetNode.width
+                    y2 = targetNode.y + targetNode.height / 2
+                  }
 
-                const isInherit = e.style === 'inheritance'
-                return (
-                  <g key={`edge-${idx}`}>
-                    <path
-                      d={pathData}
-                      fill="none"
-                      stroke={isInherit ? '#555555' : e.style === 'data' ? '#006633' : '#000080'}
-                      strokeWidth="2"
-                      strokeDasharray={isInherit ? '4 2' : 'none'}
-                      markerEnd={isInherit ? 'url(#arrow-inherit)' : 'url(#arrow-tech)'}
-                    />
-                    {e.label && (
-                      <text
-                        x={(x1 + x2) / 2}
-                        y={(y1 + y2) / 2 - 4}
-                        fill="#333"
-                        fontSize="9"
-                        fontFamily="monospace"
-                        textAnchor="middle"
-                        style={{ backgroundColor: '#fff' }}
-                      >
-                        {e.label}
-                      </text>
-                    )}
-                  </g>
-                )
-              })}
-            </svg>
+                  const dx = (x2 - x1) * 0.5
+                  const pathData = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`
+
+                  const isInherit = e.style === 'inheritance'
+                  const isConnectedToSelected = selectedNodeId === e.fromId || selectedNodeId === e.toId
+                  const isHighlight = isConnectedToSelected
+
+                  // In modalità Focus, se c'è una selezione nascondi completamente gli archi non correlati
+                  if (edgeMode === 'focus' && selectedNodeId && !isConnectedToSelected) {
+                    return null
+                  }
+
+                  const opacity = isHighlight
+                    ? 1
+                    : (selectedNodeId ? 0.05 : (edgeMode === 'all' ? 0.7 : 0.22))
+                  const strokeWidth = isHighlight ? 2.5 : 1.2
+                  const strokeColor = isHighlight
+                    ? '#0000ff'
+                    : (isInherit ? '#555555' : e.style === 'data' ? '#006633' : '#000080')
+                  const markerId = isHighlight
+                    ? 'url(#arrow-highlight)'
+                    : (isInherit ? 'url(#arrow-inherit)' : 'url(#arrow-tech)')
+
+                  const showLabel = isHighlight || (edgeMode === 'all' && edges.length <= 6)
+
+                  return (
+                    <g key={`edge-${idx}`} style={{ opacity }}>
+                      <path
+                        d={pathData}
+                        fill="none"
+                        stroke={strokeColor}
+                        strokeWidth={strokeWidth}
+                        strokeDasharray={isInherit ? '4 2' : 'none'}
+                        markerEnd={markerId}
+                      />
+                      {e.label && showLabel && (
+                        <g>
+                          <rect
+                            x={(x1 + x2) / 2 - 50}
+                            y={(y1 + y2) / 2 - 10}
+                            width="100"
+                            height="16"
+                            rx="3"
+                            fill="#ffffff"
+                            stroke={strokeColor}
+                            strokeWidth="1"
+                            opacity="0.95"
+                          />
+                          <text
+                            x={(x1 + x2) / 2}
+                            y={(y1 + y2) / 2}
+                            fill="#000066"
+                            fontSize="9"
+                            fontFamily="monospace"
+                            fontWeight="bold"
+                            textAnchor="middle"
+                            dominantBaseline="central"
+                          >
+                            {e.label}
+                          </text>
+                        </g>
+                      )}
+                    </g>
+                  )
+                })}
+              </svg>
+            )}
 
             {/* Render dei Blocchi Nodi del Disegno Tecnico */}
             {filteredNodes.map(node => {

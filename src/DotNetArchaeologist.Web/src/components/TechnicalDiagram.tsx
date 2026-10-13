@@ -37,6 +37,18 @@ interface DiagramEdge {
 type LayerFilter = 'all' | 'services' | 'databases' | 'batch' | 'classes'
 type EdgeMode = 'focus' | 'all' | 'none'
 
+function formatShortTech(tech: string): string {
+  if (!tech) return ''
+  if (tech.includes('Entity Framework') || tech.includes('ObjectContext') || tech.includes('DbContext')) {
+    return 'Entity Framework'
+  }
+  if (tech.includes('ASP.NET MVC')) return 'MVC Controller'
+  if (tech.includes('Web API')) return 'Web API (REST)'
+  if (tech.includes('WCF Service')) return 'WCF Service'
+  if (tech.includes('Console Batch') || tech.includes('Scheduled Worker')) return 'Batch Worker'
+  return tech
+}
+
 export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
   solution,
   assembly,
@@ -56,7 +68,7 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
 
     // 1. SE C'È UNA SOLUTION CARICATA: DISEGNO TECNICO DI SISTEMA
     if (solution) {
-      const colWidth = 260
+      const colWidth = 290
       const rowGap = 30
       const colGap = 110
 
@@ -478,9 +490,11 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                   const isConnectedToSelected = selectedNodeId === e.fromId || selectedNodeId === e.toId
                   const isHighlight = isConnectedToSelected
 
-                  // In modalità Focus, se c'è una selezione nascondi completamente gli archi non correlati
-                  if (edgeMode === 'focus' && selectedNodeId && !isConnectedToSelected) {
-                    return null
+                  // In modalità Focus mostra gli archi solo quando un nodo è selezionato
+                  if (edgeMode === 'focus') {
+                    if (!selectedNodeId || !isConnectedToSelected) {
+                      return null
+                    }
                   }
 
                   const opacity = isHighlight
@@ -568,25 +582,68 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                     style={{
                       backgroundColor: colors.header,
                       color: colors.text,
-                      padding: '3px 6px',
+                      padding: '3px 8px',
                       fontWeight: 'bold',
                       fontSize: '11px',
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
+                      gap: '8px',
+                      overflow: 'hidden',
+                      boxSizing: 'border-box',
                     }}
                   >
-                    <span>[{node.category.toUpperCase()}]</span>
-                    <span style={{ fontSize: '10px', opacity: 0.9 }}>{node.technology}</span>
+                    <span style={{ flexShrink: 0, letterSpacing: '0.5px', lineHeight: '14px' }}>
+                      [{node.category.toUpperCase()}]
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        lineHeight: '14px',
+                        opacity: 0.9,
+                        textAlign: 'right',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        flexShrink: 1,
+                        minWidth: 0,
+                      }}
+                      title={node.technology}
+                    >
+                      {formatShortTech(node.technology)}
+                    </span>
                   </div>
 
                   {/* Corpo del blocco */}
                   <div style={{ padding: '6px' }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#000080', marginBottom: '2px' }}>
+                    <div
+                      style={{
+                        fontWeight: 'bold',
+                        fontSize: '12px',
+                        color: '#000080',
+                        lineHeight: '16px',
+                        marginBottom: '2px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                      title={node.title}
+                    >
                       {node.title}
                     </div>
                     {node.subtitle && (
-                      <div style={{ fontSize: '10px', color: '#555', marginBottom: '6px', wordBreak: 'break-all' }}>
+                      <div
+                        style={{
+                          fontSize: '10px',
+                          color: '#555',
+                          lineHeight: '14px',
+                          marginBottom: '6px',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                        title={node.subtitle}
+                      >
                         {node.subtitle}
                       </div>
                     )}

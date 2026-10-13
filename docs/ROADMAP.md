@@ -1,0 +1,146 @@
+# Roadmap di .NET Archaeologist
+
+Questo documento definisce le milestone di sviluppo di **.NET Archaeologist**, organizzate in ordine sequenziale e corredate da criteri di verifica oggettivi.
+
+---
+
+## 📌 Panoramica delle Milestone
+
+```
+[M0: Inizializzazione & Governance] (Attuale)
+                │
+                ▼
+[M1: Solution .NET & Metadata Engine]
+                │
+                ▼
+[M2: Decompilazione C# & API Locale]
+                │
+                ▼
+[M3: Frontend SPA & Code Viewer]
+                │
+                ▼
+[M4: Grafo Architetturale Interattivo]
+                │
+                ▼
+[M5: Report Markdown & Integrazione Evidenze REA]
+                │
+                ▼
+[M6: Persistenza Locale SQLite]
+```
+
+---
+
+## Milestone 0: Inizializzazione & Governance (Stato: In Corso)
+**Obiettivo**: Allestire il repository open source con fondamenta architetturali chiare, documentate e verificabili.
+
+- [x] Inizializzazione repository Git e associazione al remote GitHub ufficiale.
+- [x] Configurazione del file `.gitignore` per .NET, Node.js e protezione dati/segreti.
+- [x] Redazione del documento di architettura (`docs/ARCHITETTURA.md`).
+- [x] Redazione delle linee guida di sviluppo (`docs/SVILUPPO.md`).
+- [x] Redazione della roadmap sequenziale (`docs/ROADMAP.md`).
+- [x] Definizione delle convenzioni per gli agenti AI (`AGENTS.md`).
+- [x] Licenza open source (MIT).
+- [ ] Primo commit atomico e push verificato su GitHub.
+
+**Criteri di verifica**:
+- Repository pulito, senza file non tracciati o residui.
+- Cronologia Git coerente con messaggi semantici in italiano.
+- Remote `origin` allineato con il branch `main`.
+
+---
+
+## Milestone 1: Solution .NET e Core Metadata Engine
+**Obiettivo**: Creare la Solution .NET e implementare la lettura passiva dei metadati CLI tramite `System.Reflection.Metadata`.
+
+- [ ] Creazione della solution `DotNetArchaeologist.sln`.
+- [ ] Creazione del progetto `DotNetArchaeologist.Core` (modelli di dominio ed entità immutabili).
+- [ ] Creazione del progetto `DotNetArchaeologist.Analysis` con parser `MetadataReader`.
+  - Ispezione intestazioni PE e metadati ECMA-335.
+  - Estrazione di nomi di assembly, moduli e target runtime.
+  - Mappatura di Namespace, `TypeDefinition`, `MethodDefinition`, `FieldDefinition`.
+- [ ] Creazione del progetto di test `DotNetArchaeologist.Analysis.Tests` (xUnit).
+  - Test automatizzati su assembly noti (o compilati in-memory tramite Roslyn durante i test).
+
+**Criteri di verifica**:
+- `dotnet build` completa senza warning o errori.
+- Tutti i test xUnit passano con successo su assembly complessi con strutture gerarchiche.
+- Nessuna esecuzione di codice target (`Assembly.Load` non deve essere mai richiamato).
+
+---
+
+## Milestone 2: Decompilazione C# e API HTTP Locale
+**Obiettivo**: Integrare il motore di decompilazione C# ILSpy e creare un backend locale minimale in ASP.NET Core.
+
+- [ ] Integrazione di `ICSharpCode.Decompiler` nel layer `Analysis`.
+  - Servizio per la decompilazione sicura di un intero tipo o di un singolo metodo.
+  - Generazione di codice C# formattato e pulito con gestione delle versioni del linguaggio.
+- [ ] Creazione del progetto `DotNetArchaeologist.Api` (ASP.NET Core Minimal API).
+  - Binding locale esclusivo (`localhost` / `127.0.0.1`).
+  - Endpoint di caricamento/ispezione file: `POST /api/assemblies/inspect`.
+  - Endpoint per l'albero dei tipi: `GET /api/assemblies/{id}/tree`.
+  - Endpoint di decompilazione: `GET /api/assemblies/{id}/decompile`.
+- [ ] Gestione degli errori controllata (file non valido, assembly non gestito, stream interrotto).
+
+**Criteri di verifica**:
+- Possibilità di interrogare via HTTP gli endpoint locali e ricevere metadati corretti e codice C# decompilato.
+- Test di integrazione API eseguiti con successo.
+
+---
+
+## Milestone 3: Frontend SPA (React, TypeScript & Vite)
+**Obiettivo**: Realizzare l'interfaccia utente web per navigare la struttura dell'assembly e visualizzare il codice decompilato.
+
+- [ ] Inizializzazione del frontend `DotNetArchaeologist.Web` (React + Vite + TypeScript).
+- [ ] Configurazione di una UI moderna e reattiva:
+  - Sidebar con file picker locale e albero di navigazione (Namespaces -> Classes -> Methods).
+  - Pannello centrale per visualizzare il codice C# con syntax highlighting.
+  - Scheda laterale con metadati dettagliati del tipo o metodo selezionato (token IL, modificatori, dimensione).
+- [ ] Connessione sicura al backend locale.
+- [ ] Test unitari frontend con Vitest.
+
+**Criteri di verifica**:
+- `npm run dev` avvia l'interfaccia senza errori in console.
+- Selezione di un elemento nell'albero carica istantaneamente il codice C# decompilato corrispondente.
+
+---
+
+## Milestone 4: Grafo Architetturale Interattivo (React Flow)
+**Obiettivo**: Ricostruire e visualizzare le relazioni tra componenti in un grafo interattivo.
+
+- [ ] Calcolo delle relazioni nel backend:
+  - Ereditarietà e interfacce implementate.
+  - Chiamate di metodo (analisi istruzioni `call` e `callvirt` nel flusso IL).
+  - Dipendenze tra tipi e campi.
+- [ ] Integrazione di React Flow nel frontend:
+  - Nodi personalizzati per Assembly, Namespace, Classi, Interfacce.
+  - Layout automatico e controlli interattivi (zoom, pan, minimappa).
+  - Filtri per isolare sotto-grafi o percorsi di dipendenza.
+- [ ] Sincronizzazione bidirezionale: cliccare un nodo nel grafo evidenzia il codice nel decompiler e viceversa.
+
+**Criteri di verifica**:
+- Il grafo visualizza correttamente le dipendenze tra classi e interfacce senza sovrapposizioni illegibili.
+- Le interazioni sono fluide anche con centinaia di nodi.
+
+---
+
+## Milestone 5: Esportazione Report & Integrazione Evidenze REA
+**Obiettivo**: Fornire reportistica avanzata ed esportazione dei risultati per flussi assistiti da agenti AI.
+
+- [ ] Generatore di report tecnici esportabili in Markdown (panoramica architettura, elenco tipi critici, dipendenze esterne).
+- [ ] Supporto all'esportazione/importazione di *Evidence Bundles* compatibili con il protocollo di reverse engineering assistito (REA).
+- [ ] Documentazione su come condurre audit di sicurezza o analisi di debito tecnico tramite i report generati.
+
+**Criteri di verifica**:
+- Il report Markdown generato è immediatamente consultabile, valido sintatticamente e completo.
+
+---
+
+## Milestone 6: Persistenza e Sessioni Locali (SQLite)
+**Obiettivo**: Memorizzare cronologia di indagine, annotazioni e preferenze di visualizzazione.
+
+- [ ] Integrazione SQLite locale nel backend.
+- [ ] Salvataggio dello stato della sessione (file aperti, nodi annotati, bookmark di codice).
+- [ ] Possibilità di riprendere un'indagine archeologica interrotta.
+
+**Criteri di verifica**:
+- Riavviando l'applicazione, le sessioni e le annotazioni precedenti rimangono intatte.

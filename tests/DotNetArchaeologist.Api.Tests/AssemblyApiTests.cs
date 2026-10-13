@@ -116,4 +116,44 @@ public sealed class AssemblyApiTests : IClassFixture<WebApplicationFactory<Progr
         var response = await _client.PostAsync("/api/assemblies/inspect", emptyContent);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
+
+    [Fact]
+    public async Task InspectFolder_ScansFolderAndReturnsFoundAssemblies()
+    {
+        // Creazione cartella temporanea con una DLL
+        var tempDir = Path.Combine(Path.GetTempPath(), $"ArchaeologistTest_{System.Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var dllPath = Path.Combine(tempDir, "SampleLibrary.dll");
+            await using (var stream = TestAssemblyGenerator.CreateAssemblyStream("public class Hello {}", "SampleLibrary"))
+            {
+                await File.WriteAllBytesAsync(dllPath, stream.ToArray());
+            }
+
+            var request = new { folderPath = tempDir };
+            var content = new StringContent(
+                System.Text.Json.JsonSerializer.Serialize(request),
+                System.Text.Encoding.UTF8,
+                "application/json");
+
+            var response = await _client.PostAsync("/api/assemblies/inspect-folder", content);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            Assert.Equal(1, json.RootElement.GetProperty("totalFound").GetInt32());
+
+            var assemblies = json.RootElement.GetProperty("assemblies");
+            Assert.True(assemblies.GetArrayLength() > 0);
+            Assert.Equal("SampleLibrary", assemblies[0].GetProperty("name").GetString());
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+            {
+                Directory.Delete(tempDir, recursive: true);
+            }
+        }
+    }
 }

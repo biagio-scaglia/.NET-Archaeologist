@@ -76,3 +76,18 @@ export interface DecompileResponse {
   method: string | null
   code: string
 }
+
+export interface DiscoveredAssemblyItem {
+  name: string
+  filePath: string
+  relativePath: string
+  version: string
+  typesCount: number
+  sizeBytes: number
+}
+
+export interface InspectFolderResponse {
+  folderPath: string
+  totalFound: number
+  assemblies: DiscoveredAssemblyItem[]
+}

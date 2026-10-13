@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNetArchaeologist.Analysis.Engines;
@@ -123,6 +126,72 @@ app.MapPost("/api/assemblies/inspect-path", async (
     }
 });
 
+// Scansione e ispezione ricorsiva di una cartella di progetto locale
+app.MapPost("/api/assemblies/inspect-folder", async (
+    InspectFolderPathRequest request,
+    CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(request.FolderPath) || !Directory.Exists(request.FolderPath))
+    {
+        return Results.BadRequest(new { error = $"Cartella non trovata sul percorso specificato: '{request.FolderPath}'." });
+    }
+
+    try
+    {
+        var dirInfo = new DirectoryInfo(request.FolderPath);
+        var files = dirInfo.EnumerateFiles("*.dll", SearchOption.AllDirectories)
+            .Concat(dirInfo.EnumerateFiles("*.exe", SearchOption.AllDirectories))
+            .Where(f => !f.FullName.Contains("\\obj\\", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        var foundAssemblies = new List<DiscoveredAssemblyItem>();
+
+        foreach (var file in files)
+        {
+            ct.ThrowIfCancellationRequested();
+            try
+            {
+                await using var stream = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using var peReader = new PEReader(stream);
+                if (peReader.HasMetadata)
+                {
+                    var mdReader = peReader.GetMetadataReader();
+                    if (mdReader.IsAssembly)
+                    {
+                        var assemblyDef = mdReader.GetAssemblyDefinition();
+                        var name = mdReader.GetString(assemblyDef.Name);
+                        var version = assemblyDef.Version.ToString();
+                        var typesCount = Math.Max(0, mdReader.TypeDefinitions.Count - 1);
+
+                        foundAssemblies.Add(new DiscoveredAssemblyItem(
+                            Name: name,
+                            FilePath: file.FullName,
+                            RelativePath: Path.GetRelativePath(request.FolderPath, file.FullName),
+                            Version: version,
+                            TypesCount: typesCount,
+                            SizeBytes: file.Length));
+                    }
+                }
+            }
+            catch
+            {
+                // Ignora file nativi non .NET o protetti
+            }
+        }
+
+        return Results.Ok(new
+        {
+            folderPath = request.FolderPath,
+            totalFound = foundAssemblies.Count,
+            assemblies = foundAssemblies.OrderBy(a => a.Name, StringComparer.Ordinal)
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { error = $"Errore durante la scansione della cartella: {ex.Message}" });
+    }
+});
+
 // Dettaglio metadati dell'Assembly
 app.MapGet("/api/assemblies/{sessionId}", (
     string sessionId,
@@ -239,3 +308,13 @@ app.Run();
 public partial class Program { }
 
 public sealed record InspectPathRequest(string FilePath);
+
+public sealed record InspectFolderPathRequest(string FolderPath);
+
+public sealed record DiscoveredAssemblyItem(
+    string Name,
+    string FilePath,
+    string RelativePath,
+    string Version,
+    int TypesCount,
+    long SizeBytes);

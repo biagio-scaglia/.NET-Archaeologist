@@ -156,24 +156,40 @@ public sealed class MetadataAssemblyInspector : IAssemblyInspector
                 var isMethodAbstract = methodDef.Attributes.HasFlag(MethodAttributes.Abstract);
                 var methodAccessibility = DetermineMethodAccessibility(methodDef.Attributes);
 
+                string returnType = "void";
+                var paramTypes = new List<string>();
+                try
+                {
+                    var sig = methodDef.DecodeSignature(MetadataSignatureTypeProvider.Instance, genericContext: null);
+                    returnType = sig.ReturnType;
+                    paramTypes.AddRange(sig.ParameterTypes);
+                }
+                catch
+                {
+                    // Fallback in caso di signature non conforme
+                }
+
                 var parameters = new List<ParameterDescriptor>();
+                int paramIndex = 0;
                 foreach (var paramHandle in methodDef.GetParameters())
                 {
                     var param = metadataReader.GetParameter(paramHandle);
                     var paramName = param.Name.IsNil ? $"p{param.SequenceNumber}" : metadataReader.GetString(param.Name);
+                    var paramType = paramIndex < paramTypes.Count ? paramTypes[paramIndex] : "object";
                     parameters.Add(new ParameterDescriptor(
                         paramName,
-                        "unknown", // signature decoding dettagliata estendibile
+                        paramType,
                         param.SequenceNumber,
                         param.Attributes.HasFlag(ParameterAttributes.In),
                         param.Attributes.HasFlag(ParameterAttributes.Out),
                         param.Attributes.HasFlag(ParameterAttributes.HasDefault)));
+                    paramIndex++;
                 }
 
                 members.Add(new MemberDescriptor(
                     methodName,
                     memberKind,
-                    "void",
+                    returnType,
                     methodAccessibility,
                     isMethodStatic,
                     isMethodVirtual,
@@ -190,10 +206,20 @@ public sealed class MetadataAssemblyInspector : IAssemblyInspector
                 var isFieldStatic = fieldDef.Attributes.HasFlag(FieldAttributes.Static);
                 var fieldAccessibility = DetermineFieldAccessibility(fieldDef.Attributes);
 
+                string fieldType = "object";
+                try
+                {
+                    fieldType = fieldDef.DecodeSignature(MetadataSignatureTypeProvider.Instance, genericContext: null);
+                }
+                catch
+                {
+                    // Fallback
+                }
+
                 members.Add(new MemberDescriptor(
                     fieldName,
                     MemberKind.Field,
-                    "unknown",
+                    fieldType,
                     fieldAccessibility,
                     isFieldStatic,
                     IsVirtual: false,

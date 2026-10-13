@@ -276,6 +276,8 @@ app.MapGet("/api/assemblies/{sessionId}/tree", (
 // Grafo architetturale
 app.MapGet("/api/assemblies/{sessionId}/graph", (
     string sessionId,
+    bool? includeReferences,
+    bool? includeExternal,
     IAssemblySessionStore sessionStore,
     IArchitectureGraphBuilder graphBuilder) =>
 {
@@ -285,7 +287,11 @@ app.MapGet("/api/assemblies/{sessionId}/graph", (
         return Results.NotFound(new { error = $"Sessione assembly '{sessionId}' non trovata." });
     }
 
-    var graph = graphBuilder.BuildGraph(descriptor);
+    var options = new ArchitectureGraphOptions(
+        IncludeMemberReferences: includeReferences ?? true,
+        IncludeExternalTypes: includeExternal ?? true);
+
+    var graph = graphBuilder.BuildGraph(descriptor, options);
     return Results.Ok(graph);
 });
 

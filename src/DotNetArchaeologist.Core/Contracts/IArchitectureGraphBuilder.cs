@@ -12,6 +12,7 @@ public interface IArchitectureGraphBuilder
     /// per l'assembly analizzato.
     /// </summary>
     /// <param name="assembly">Descrittore dell'assembly analizzato.</param>
+    /// <param name="options">Opzioni di filtraggio e generazione del grafo.</param>
     /// <returns>Grafo architetturale orientato.</returns>
-    ArchitectureGraph BuildGraph(AssemblyDescriptor assembly);
+    ArchitectureGraph BuildGraph(AssemblyDescriptor assembly, ArchitectureGraphOptions? options = null);
 }

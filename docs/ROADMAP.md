@@ -72,22 +72,25 @@ Questo documento definisce le milestone di sviluppo di **.NET Archaeologist**, o
 
 ---
 
-## Milestone 2: Decompilazione C# e API HTTP Locale
+## Milestone 2: Decompilazione C# e API HTTP Locale (Stato: Completata)
 **Obiettivo**: Integrare il motore di decompilazione C# ILSpy e creare un backend locale minimale in ASP.NET Core.
 
-- [ ] Integrazione di `ICSharpCode.Decompiler` nel layer `Analysis`.
-  - Servizio per la decompilazione sicura di un intero tipo o di un singolo metodo.
-  - Generazione di codice C# formattato e pulito con gestione delle versioni del linguaggio.
-- [ ] Creazione del progetto `DotNetArchaeologist.Api` (ASP.NET Core Minimal API).
-  - Binding locale esclusivo (`localhost` / `127.0.0.1`).
-  - Endpoint di caricamento/ispezione file: `POST /api/assemblies/inspect`.
-  - Endpoint per l'albero dei tipi: `GET /api/assemblies/{id}/tree`.
-  - Endpoint di decompilazione: `GET /api/assemblies/{id}/decompile`.
-- [ ] Gestione degli errori controllata (file non valido, assembly non gestito, stream interrotto).
-
-**Criteri di verifica**:
-- Possibilità di interrogare via HTTP gli endpoint locali e ricevere metadati corretti e codice C# decompilato.
-- Test di integrazione API eseguiti con successo.
+- [x] Integrazione di `ICSharpCode.Decompiler` nel layer `Analysis`.
+  - Servizio `CSharpDecompilerService` per la decompilazione sicura di un intero tipo, metodo o modulo.
+  - Generazione di codice C# formattato e pulito con supporto C# moderno (`LanguageVersion.Latest`).
+  - Definizione dell'interfaccia `IDecompilerService` in `Core.Contracts`.
+- [x] Creazione del progetto `DotNetArchaeologist.Api` (ASP.NET Core Minimal API).
+  - Binding locale esclusivo con policy CORS ristretta a `localhost` (`5173`, `3000`).
+  - Store delle sessioni in memoria thread-safe (`InMemoryAssemblySessionStore`).
+  - Endpoint di caricamento/ispezione file: `POST /api/assemblies/inspect` e `POST /api/assemblies/inspect-path`.
+  - Endpoint per i metadati: `GET /api/assemblies/{sessionId}`.
+  - Endpoint per l'albero dei tipi e namespace: `GET /api/assemblies/{sessionId}/tree`.
+  - Endpoint per il grafo architetturale: `GET /api/assemblies/{sessionId}/graph`.
+  - Endpoint di decompilazione mirata o globale: `GET /api/assemblies/{sessionId}/decompile?type=...&method=...`.
+  - Endpoint di diagnostica: `GET /health`.
+- [x] Gestione degli errori controllata (400 Bad Request, 404 Not Found, eccezioni gestite).
+- [x] Creazione del progetto `tests/DotNetArchaeologist.Api.Tests` con xUnit e `WebApplicationFactory`.
+  - Test end-to-end del ciclo completo di ispezione, albero, grafo e decompilazione.
 
 ---
 

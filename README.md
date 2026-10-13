@@ -54,7 +54,8 @@ Nello sviluppo di .NET Archaeologist:
 - [x] Definizione dell'architettura di base e dei confini di responsabilità (Milestone 0).
 - [x] Redazione delle linee guida operative e della roadmap di sviluppo (Milestone 0).
 - [x] Creazione della Solution .NET e del Core Metadata Engine (Milestone 1).
-- [ ] Decompilazione C# tramite ILSpy e API locale ASP.NET Core (Milestone 2).
+- [x] Decompilazione C# tramite ILSpy e API locale ASP.NET Core (Milestone 2).
+- [ ] Frontend SPA in React + TypeScript + Vite (Milestone 3).
  
  Consulta [docs/ROADMAP.md](docs/ROADMAP.md) per il piano dettagliato delle prossime fasi.
 

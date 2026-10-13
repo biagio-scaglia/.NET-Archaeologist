@@ -42,6 +42,7 @@ builder.Services.AddSingleton<IAssemblySessionStore, InMemoryAssemblySessionStor
 
 var app = builder.Build();
 
+app.UseMiddleware<LocalOriginValidationMiddleware>();
 app.UseCors(localCorsPolicy);
 
 // ==============================================================================
@@ -69,9 +70,10 @@ app.MapPost("/api/assemblies/inspect", async (
     }
 
     var file = request.Form.Files[0];
-    if (file.Length == 0)
+    var validation = LocalPathSecurityValidator.ValidateUploadedFile(file);
+    if (!validation.IsValid)
     {
-        return Results.BadRequest(new { error = "Il file caricato è vuoto." });
+        return Results.Json(new { error = validation.ErrorMessage }, statusCode: validation.StatusCode);
     }
 
     await using var ms = new MemoryStream();
@@ -103,16 +105,19 @@ app.MapPost("/api/assemblies/inspect-path", async (
     IAssemblySessionStore sessionStore,
     CancellationToken ct) =>
 {
-    if (string.IsNullOrWhiteSpace(request.FilePath) || !File.Exists(request.FilePath))
+    var validation = LocalPathSecurityValidator.ValidateAssemblyPath(request.FilePath);
+    if (!validation.IsValid)
     {
-        return Results.BadRequest(new { error = $"File dell'assembly non trovato sul percorso specificato: '{request.FilePath}'." });
+        return Results.Json(new { error = validation.ErrorMessage }, statusCode: validation.StatusCode);
     }
+
+    var validatedPath = validation.NormalizedPath!;
 
     try
     {
-        var rawBytes = await File.ReadAllBytesAsync(request.FilePath, ct);
+        var rawBytes = await File.ReadAllBytesAsync(validatedPath, ct);
         using var readStream = new MemoryStream(rawBytes, writable: false);
-        var descriptor = await inspector.InspectAsync(readStream, Path.GetFileName(request.FilePath), ct);
+        var descriptor = await inspector.InspectAsync(readStream, Path.GetFileName(validatedPath), ct);
         var sessionId = sessionStore.Register(descriptor, rawBytes);
 
         return Results.Ok(new
@@ -120,6 +125,10 @@ app.MapPost("/api/assemblies/inspect-path", async (
             sessionId,
             assembly = descriptor
         });
+    }
+    catch (UnauthorizedAccessException)
+    {
+        return Results.Json(new { error = $"Accesso negato durante la lettura del file: '{validatedPath}'." }, statusCode: StatusCodes.Status403Forbidden);
     }
     catch (Exception ex)
     {
@@ -132,22 +141,35 @@ app.MapPost("/api/assemblies/inspect-folder", async (
     InspectFolderPathRequest request,
     CancellationToken ct) =>
 {
-    if (string.IsNullOrWhiteSpace(request.FolderPath) || !Directory.Exists(request.FolderPath))
+    var validation = LocalPathSecurityValidator.ValidateFolderPath(request.FolderPath);
+    if (!validation.IsValid)
     {
-        return Results.BadRequest(new { error = $"Cartella non trovata sul percorso specificato: '{request.FolderPath}'." });
+        return Results.Json(new { error = validation.ErrorMessage }, statusCode: validation.StatusCode);
     }
+
+    var validatedFolder = validation.NormalizedPath!;
 
     try
     {
-        var dirInfo = new DirectoryInfo(request.FolderPath);
-        var files = dirInfo.EnumerateFiles("*.dll", SearchOption.AllDirectories)
-            .Concat(dirInfo.EnumerateFiles("*.exe", SearchOption.AllDirectories))
-            .Where(f => !f.FullName.Contains("\\obj\\", StringComparison.OrdinalIgnoreCase))
+        var dirInfo = new DirectoryInfo(validatedFolder);
+        var enumerationOptions = new EnumerationOptions
+        {
+            RecurseSubdirectories = true,
+            IgnoreInaccessible = true,
+            MaxRecursionDepth = 8
+        };
+
+        var dllFiles = dirInfo.EnumerateFiles("*.dll", enumerationOptions);
+        var exeFiles = dirInfo.EnumerateFiles("*.exe", enumerationOptions);
+
+        var candidateFiles = dllFiles.Concat(exeFiles)
+            .Where(f => !f.FullName.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+            .Take(LocalPathSecurityValidator.DefaultMaxDiscoveredAssemblies)
             .ToList();
 
         var foundAssemblies = new List<DiscoveredAssemblyItem>();
 
-        foreach (var file in files)
+        foreach (var file in candidateFiles)
         {
             ct.ThrowIfCancellationRequested();
             try
@@ -167,7 +189,7 @@ app.MapPost("/api/assemblies/inspect-folder", async (
                         foundAssemblies.Add(new DiscoveredAssemblyItem(
                             Name: name,
                             FilePath: file.FullName,
-                            RelativePath: Path.GetRelativePath(request.FolderPath, file.FullName),
+                            RelativePath: Path.GetRelativePath(validatedFolder, file.FullName),
                             Version: version,
                             TypesCount: typesCount,
                             SizeBytes: file.Length));
@@ -176,16 +198,20 @@ app.MapPost("/api/assemblies/inspect-folder", async (
             }
             catch
             {
-                // Ignora file nativi non .NET o protetti
+                // Ignora file nativi non .NET, protetti o inaccessibili
             }
         }
 
         return Results.Ok(new
         {
-            folderPath = request.FolderPath,
+            folderPath = validatedFolder,
             totalFound = foundAssemblies.Count,
             assemblies = foundAssemblies.OrderBy(a => a.Name, StringComparer.Ordinal)
         });
+    }
+    catch (UnauthorizedAccessException)
+    {
+        return Results.Json(new { error = $"Accesso negato per la cartella specificata: '{validatedFolder}'." }, statusCode: StatusCodes.Status403Forbidden);
     }
     catch (Exception ex)
     {
@@ -309,19 +335,26 @@ app.MapPost("/api/solution/inspect", async (
     ISolutionInspector solutionInspector,
     CancellationToken ct) =>
 {
-    if (string.IsNullOrWhiteSpace(request.SolutionOrFolderPath))
+    var validation = LocalPathSecurityValidator.ValidateSolutionOrFolderPath(request.SolutionOrFolderPath);
+    if (!validation.IsValid)
     {
-        return Results.BadRequest(new { error = "Specificare il percorso del file .sln o della cartella di progetto." });
+        return Results.Json(new { error = validation.ErrorMessage }, statusCode: validation.StatusCode);
     }
+
+    var validatedPath = validation.NormalizedPath!;
 
     try
     {
-        var solution = await solutionInspector.InspectSolutionAsync(request.SolutionOrFolderPath, ct);
+        var solution = await solutionInspector.InspectSolutionAsync(validatedPath, ct);
         return Results.Ok(solution);
     }
     catch (FileNotFoundException ex)
     {
         return Results.NotFound(new { error = ex.Message });
+    }
+    catch (UnauthorizedAccessException)
+    {
+        return Results.Json(new { error = $"Accesso negato durante la lettura della solution o dei progetti: '{validatedPath}'." }, statusCode: StatusCodes.Status403Forbidden);
     }
     catch (Exception ex)
     {

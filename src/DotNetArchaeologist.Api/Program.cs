@@ -33,6 +33,11 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Configurazione sessioni di ispezione e limiti di memoria
+builder.Services.Configure<AssemblySessionOptions>(
+    builder.Configuration.GetSection(AssemblySessionOptions.SectionName));
+builder.Services.AddSingleton(TimeProvider.System);
+
 // Registrazione servizi di analisi e dominio
 builder.Services.AddSingleton<IAssemblyInspector, MetadataAssemblyInspector>();
 builder.Services.AddSingleton<IDecompilerService, CSharpDecompilerService>();

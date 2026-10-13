@@ -1,10 +1,12 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/DotNetArchaeologist.Analysis/DotNetArchaeologist.Analysis.csproj" />
+    <Project Path="src/DotNetArchaeologist.Api/DotNetArchaeologist.Api.csproj" />
     <Project Path="src/DotNetArchaeologist.Core/DotNetArchaeologist.Core.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/DotNetArchaeologist.Analysis.Tests/DotNetArchaeologist.Analysis.Tests.csproj" />
+    <Project Path="tests/DotNetArchaeologist.Api.Tests/DotNetArchaeologist.Api.Tests.csproj" />
     <Project Path="tests/DotNetArchaeologist.Core.Tests/DotNetArchaeologist.Core.Tests.csproj" />
   </Folder>
 </Solution>

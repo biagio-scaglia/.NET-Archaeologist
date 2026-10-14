@@ -42,8 +42,8 @@ export const MenuBar: React.FC<MenuBarProps> = ({
           type="button"
           onClick={() => setTheme('win98')}
           title="Attiva stile classico Windows 98 (98.css)"
+          className={theme === 'win98' ? 'active-view-tab' : ''}
           style={{
-            fontWeight: theme === 'win98' ? 'bold' : 'normal',
             fontSize: '10px',
             padding: '1px 5px',
             height: '19px',
@@ -56,8 +56,8 @@ export const MenuBar: React.FC<MenuBarProps> = ({
           type="button"
           onClick={() => setTheme('winxp')}
           title="Attiva stile moderno Windows XP Luna (xp.css)"
+          className={theme === 'winxp' ? 'active-view-tab' : ''}
           style={{
-            fontWeight: theme === 'winxp' ? 'bold' : 'normal',
             fontSize: '10px',
             padding: '1px 5px',
             height: '19px',
@@ -70,8 +70,8 @@ export const MenuBar: React.FC<MenuBarProps> = ({
           type="button"
           onClick={() => setTheme('win7')}
           title="Attiva stile Aero Glass Windows 7 (7.css)"
+          className={theme === 'win7' ? 'active-view-tab' : ''}
           style={{
-            fontWeight: theme === 'win7' ? 'bold' : 'normal',
             fontSize: '10px',
             padding: '1px 5px',
             height: '19px',

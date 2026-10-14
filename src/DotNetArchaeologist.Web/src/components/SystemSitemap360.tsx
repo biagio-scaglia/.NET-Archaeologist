@@ -230,7 +230,7 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        backgroundColor: '#c0c0c0',
+        backgroundColor: 'var(--retro-surface)',
         padding: '6px',
         boxSizing: 'border-box',
         overflow: 'hidden',
@@ -244,7 +244,7 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
         </legend>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
           <div>
-            <div style={{ color: '#000080', fontWeight: 'bold', fontSize: '12px' }}>
+            <div style={{ color: 'var(--retro-selection)', fontWeight: 'bold', fontSize: '12px' }}>
               Visione Integrata End-to-End: Dalle Pagine Web ai Database e ai Processi Batch
             </div>
             <div style={{ color: '#333', marginTop: '2px' }}>
@@ -253,7 +253,7 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
           </div>
           <button
             onClick={onClose}
-            style={{ padding: '2px 8px', fontWeight: 'bold' }}
+            style={{ padding: '2px 8px', fontWeight: 'bold', cursor: 'pointer' }}
           >
             Chiudi Mappa
           </button>
@@ -266,8 +266,8 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          backgroundColor: '#dfdfdf',
-          border: '2px groove #fff',
+          backgroundColor: 'var(--retro-surface-light)',
+          border: '1px solid var(--retro-border)',
           padding: '4px 8px',
           marginBottom: '6px',
           flexWrap: 'wrap',
@@ -278,10 +278,8 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
           <strong>Vista:</strong>
           <button
             onClick={() => setViewMode('flow')}
+            className={viewMode === 'flow' ? 'active-view-tab' : ''}
             style={{
-              fontWeight: viewMode === 'flow' ? 'bold' : 'normal',
-              backgroundColor: viewMode === 'flow' ? '#000080' : undefined,
-              color: viewMode === 'flow' ? '#fff' : undefined,
               cursor: 'pointer',
               padding: '2px 8px',
             }}
@@ -290,10 +288,8 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
           </button>
           <button
             onClick={() => setViewMode('tree')}
+            className={viewMode === 'tree' ? 'active-view-tab' : ''}
             style={{
-              fontWeight: viewMode === 'tree' ? 'bold' : 'normal',
-              backgroundColor: viewMode === 'tree' ? '#000080' : undefined,
-              color: viewMode === 'tree' ? '#fff' : undefined,
               cursor: 'pointer',
               padding: '2px 8px',
             }}
@@ -302,10 +298,8 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
           </button>
           <button
             onClick={() => setViewMode('api')}
+            className={viewMode === 'api' ? 'active-view-tab' : ''}
             style={{
-              fontWeight: viewMode === 'api' ? 'bold' : 'normal',
-              backgroundColor: viewMode === 'api' ? '#000080' : undefined,
-              color: viewMode === 'api' ? '#fff' : undefined,
               cursor: 'pointer',
               padding: '2px 8px',
             }}
@@ -371,11 +365,12 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
                       return (
                         <div
                           key={item.id}
+                          className={`sitemap-card ${isSel ? 'selected' : ''}`}
                           onClick={() => setSelectedItemId(item.id)}
                           style={{
                             padding: '6px',
                             marginBottom: '6px',
-                            backgroundColor: isSel ? '#550055' : '#ffffff',
+                            backgroundColor: isSel ? '#550055' : undefined,
                             color: isSel ? '#ffffff' : '#000000',
                             border: isSel ? '2px solid #000' : '1px solid #cc99cc',
                             cursor: 'pointer',
@@ -404,11 +399,12 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
                       return (
                         <div
                           key={item.id}
+                          className={`sitemap-card ${isSel ? 'selected' : ''}`}
                           onClick={() => setSelectedItemId(item.id)}
                           style={{
                             padding: '6px',
                             marginBottom: '6px',
-                            backgroundColor: isSel ? '#000080' : isLinked ? '#fff2cc' : '#ffffff',
+                            backgroundColor: isSel ? '#000080' : isLinked ? '#fff2cc' : undefined,
                             color: isSel ? '#ffffff' : '#000000',
                             border: isSel ? '2px solid #000' : isLinked ? '2px solid #ff9900' : '1px solid #99aacc',
                             cursor: 'pointer',
@@ -438,11 +434,12 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
                       return (
                         <div
                           key={item.id}
+                          className={`sitemap-card ${isSel ? 'selected' : ''}`}
                           onClick={() => setSelectedItemId(item.id)}
                           style={{
                             padding: '6px',
                             marginBottom: '6px',
-                            backgroundColor: isSel ? '#006633' : isLinked ? '#fff2cc' : '#ffffff',
+                            backgroundColor: isSel ? '#006633' : isLinked ? '#fff2cc' : undefined,
                             color: isSel ? '#ffffff' : '#000000',
                             border: isSel ? '2px solid #000' : isLinked ? '2px solid #ff9900' : '1px solid #99ccaa',
                             cursor: 'pointer',
@@ -469,11 +466,12 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
                       return (
                         <div
                           key={item.id}
+                          className={`sitemap-card ${isSel ? 'selected' : ''}`}
                           onClick={() => setSelectedItemId(item.id)}
                           style={{
                             padding: '6px',
                             marginBottom: '6px',
-                            backgroundColor: isSel ? '#994400' : '#ffffff',
+                            backgroundColor: isSel ? '#994400' : undefined,
                             color: isSel ? '#ffffff' : '#000000',
                             border: isSel ? '2px solid #000' : '1px solid #ccaa88',
                             cursor: 'pointer',
@@ -503,8 +501,8 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
                     <div
                       onClick={() => toggleSection(sectionName)}
                       style={{
-                        backgroundColor: '#dfdfdf',
-                        border: '1px solid #808080',
+                        backgroundColor: 'var(--retro-surface-light)',
+                        border: '1px solid var(--retro-border)',
                         padding: '4px 8px',
                         fontWeight: 'bold',
                         cursor: 'pointer',
@@ -517,19 +515,20 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
                     </div>
 
                     {isExp && (
-                      <div style={{ paddingLeft: '16px', borderLeft: '2px dashed #999', marginTop: '4px' }}>
+                      <div style={{ paddingLeft: '16px', borderLeft: '2px dashed var(--retro-border)', marginTop: '4px' }}>
                         {items.map(item => {
                           const isSel = selectedItem?.id === item.id
                           return (
                             <div
                               key={item.id}
+                              className={`sitemap-card ${isSel ? 'selected' : ''}`}
                               onClick={() => setSelectedItemId(item.id)}
                               style={{
                                 padding: '4px 8px',
                                 marginBottom: '3px',
-                                backgroundColor: isSel ? '#000080' : '#f8f8f8',
-                                color: isSel ? '#ffffff' : '#000000',
-                                border: '1px solid #ccc',
+                                backgroundColor: isSel ? 'var(--retro-selection)' : undefined,
+                                color: isSel ? 'var(--retro-selection-text)' : '#000000',
+                                border: '1px solid var(--retro-border-light)',
                                 cursor: 'pointer',
                               }}
                             >
@@ -552,13 +551,13 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
               <div style={{ marginBottom: '10px', color: '#333' }}>
                 Tutte le interfacce formali, contratti WCF e operazioni SOAP/REST esposte dal sistema:
               </div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+              <table className="retro-table">
                 <thead>
-                  <tr style={{ backgroundColor: '#dfdfdf', borderBottom: '2px solid #808080' }}>
-                    <th style={{ textAlign: 'left', padding: '4px' }}>Contratto / Interfaccia</th>
-                    <th style={{ textAlign: 'left', padding: '4px' }}>Servizio Implementativo</th>
-                    <th style={{ textAlign: 'left', padding: '4px' }}>Tecnologia</th>
-                    <th style={{ textAlign: 'left', padding: '4px' }}>Operazioni / Firme</th>
+                  <tr>
+                    <th style={{ textAlign: 'left', padding: '6px' }}>Contratto / Interfaccia</th>
+                    <th style={{ textAlign: 'left', padding: '6px' }}>Servizio Implementativo</th>
+                    <th style={{ textAlign: 'left', padding: '6px' }}>Tecnologia</th>
+                    <th style={{ textAlign: 'left', padding: '6px' }}>Operazioni / Firme</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -566,10 +565,9 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
                     <tr
                       key={svc.serviceName}
                       onClick={() => setSelectedItemId(`svc-${svc.projectName}_${svc.serviceName}`)}
+                      className={selectedItem?.title === svc.serviceName ? 'selected' : ''}
                       style={{
-                        borderBottom: '1px solid #ddd',
                         cursor: 'pointer',
-                        backgroundColor: selectedItem?.title === svc.serviceName ? '#eef3fc' : undefined,
                       }}
                     >
                       <td style={{ padding: '6px', fontWeight: 'bold', color: '#660066' }}>
@@ -592,8 +590,8 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
         <div
           style={{
             width: '320px',
-            backgroundColor: '#dfdfdf',
-            border: '2px groove #fff',
+            backgroundColor: 'var(--retro-surface-light)',
+            border: '1px solid var(--retro-border)',
             display: 'flex',
             flexDirection: 'column',
             padding: '8px',

@@ -1,5 +1,45 @@
 /* Il tema retro attivo (98.css, xp.css o 7.css) viene iniettato dinamicamente da ThemeProvider */
 
+/* Variabili di tema retro dinamiche */
+body.theme-win98 {
+  --retro-surface: #c0c0c0;
+  --retro-surface-light: #dfdfdf;
+  --retro-border: #808080;
+  --retro-border-light: #dfdfdf;
+  --retro-selection: #000080;
+  --retro-selection-text: #ffffff;
+  --retro-hover-soft: #dcdcdc;
+  --retro-hover-card: #eef3fc;
+  --retro-active-tab-bg: #dfdfdf;
+  --retro-active-tab-text: #000080;
+}
+
+body.theme-winxp {
+  --retro-surface: #ece9d8;
+  --retro-surface-light: #f7f6f0;
+  --retro-border: #7f9db9;
+  --retro-border-light: #d0d0bf;
+  --retro-selection: #316ac5;
+  --retro-selection-text: #ffffff;
+  --retro-hover-soft: #ffe8a6; /* Tocco caldo arancio/oro di Windows XP Luna */
+  --retro-hover-card: #fff6db;
+  --retro-active-tab-bg: #fcfcfe;
+  --retro-active-tab-text: #0046d5;
+}
+
+body.theme-win7 {
+  --retro-surface: #f0f0f0;
+  --retro-surface-light: #fafafa;
+  --retro-border: #8e8f8f;
+  --retro-border-light: #d4d4d4;
+  --retro-selection: #3399ff;
+  --retro-selection-text: #ffffff;
+  --retro-hover-soft: #e5f3fb; /* Azzurro Aero Glass di Windows 7 */
+  --retro-hover-card: #eaf4fb;
+  --retro-active-tab-bg: #e9f7fe;
+  --retro-active-tab-text: #000000;
+}
+
 /* Reset e configurazione base desktop per retro OS (Windows 98, XP, 7) */
 html, body {
   margin: 0;
@@ -8,7 +48,7 @@ html, body {
   width: 100%;
   overflow: hidden;
   background-color: #008080; /* Teal classico di default per Win98, aggiornato da ThemeProvider */
-  font-family: "MS Sans Serif", Arial, sans-serif;
+  font-family: inherit;
   font-size: 11px;
   user-select: none;
 }
@@ -28,6 +68,7 @@ html, body {
   height: 100%;
   width: 100%;
   box-sizing: border-box;
+  background-color: var(--retro-surface);
 }
 
 .window-body-custom {
@@ -37,39 +78,62 @@ html, body {
   margin: 0;
   padding: 4px;
   overflow: hidden;
+  background-color: var(--retro-surface);
 }
 
-/* Menu bar stile Win98 */
+/* Menu bar adattiva */
 .menu-bar {
   display: flex;
   gap: 12px;
   padding: 2px 6px;
-  background-color: #c0c0c0;
-  border-bottom: 1px solid #808080;
+  background-color: var(--retro-surface);
+  border-bottom: 1px solid var(--retro-border);
   margin-bottom: 4px;
 }
 
 .menu-item {
   cursor: pointer;
-  padding: 1px 4px;
+  padding: 1px 6px;
+  border-radius: 2px;
 }
 
 .menu-item:hover {
-  background-color: #000080;
-  color: #ffffff;
+  background-color: var(--retro-selection);
+  color: var(--retro-selection-text);
 }
 
-/* Toolbar dei comandi rapidi */
-.command-bar {
+/* Toolbar dei comandi e viste */
+.command-bar,
+.view-bar {
   display: flex;
   gap: 6px;
   align-items: center;
-  padding: 4px 6px;
-  background-color: #c0c0c0;
-  border: 1px solid #808080;
-  border-top-color: #ffffff;
-  border-left-color: #ffffff;
-  margin-bottom: 6px;
+  padding: 3px 6px;
+  background-color: var(--retro-surface);
+  border-bottom: 1px solid var(--retro-border);
+  margin-bottom: 4px;
+}
+
+/* Pulsanti attivi delle viste (schede/tab attive) */
+button.active-view-tab {
+  font-weight: bold;
+}
+body.theme-win98 button.active-view-tab {
+  box-shadow: inset -1px -1px #ffffff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px #808080 !important;
+  background-color: var(--retro-active-tab-bg) !important;
+  color: var(--retro-active-tab-text) !important;
+}
+body.theme-winxp button.active-view-tab {
+  box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px grey !important;
+  background-color: var(--retro-active-tab-bg) !important;
+  border-top: 1px solid #e68b2c !important;
+  color: var(--retro-active-tab-text) !important;
+}
+body.theme-win7 button.active-view-tab {
+  border-color: #3c7fb1 !important;
+  background: var(--retro-active-tab-bg) !important;
+  box-shadow: inset 0 0 0 1px #def9fa, inset 1px 1px 0 1px #79c6f9, inset -1px -1px 0 1px #c6e9fc !important;
+  color: var(--retro-active-tab-text) !important;
 }
 
 /* Area principale divisa in pannelli */
@@ -116,12 +180,90 @@ html, body {
 }
 
 .tree-node:hover {
-  background-color: #e0e0e0;
+  background-color: var(--retro-hover-soft);
+  color: inherit;
 }
 
 .tree-node.selected {
-  background-color: #000080;
-  color: #ffffff;
+  background-color: var(--retro-selection);
+  color: var(--retro-selection-text);
+}
+
+/* Tabelle retro con righe evidenziate in hover */
+table.retro-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+table.retro-table thead tr {
+  background-color: var(--retro-surface-light);
+  border-bottom: 2px solid var(--retro-border);
+}
+
+table.retro-table tbody tr {
+  transition: background-color 0.1s ease;
+  border-bottom: 1px solid var(--retro-border-light);
+}
+
+table.retro-table tbody tr:hover {
+  background-color: var(--retro-hover-soft) !important;
+  cursor: pointer;
+}
+
+table.retro-table tbody tr.selected {
+  background-color: var(--retro-selection) !important;
+  color: var(--retro-selection-text) !important;
+}
+
+/* Card interattive della Sitemap e Flussi */
+.sitemap-card {
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sitemap-card:not(.selected):hover {
+  background-color: var(--retro-hover-card) !important;
+  border-color: var(--retro-selection) !important;
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Item di lista retro interattivi */
+.retro-list-item {
+  padding: 4px 6px;
+  margin-bottom: 2px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  font-size: 11px;
+  transition: background-color 0.1s ease;
+}
+
+.retro-list-item:hover:not(.selected) {
+  background-color: var(--retro-hover-soft) !important;
+  color: inherit;
+}
+
+.retro-list-item.selected {
+  background-color: var(--retro-selection) !important;
+  color: var(--retro-selection-text) !important;
+  border: 1px dotted var(--retro-selection-text);
+}
+
+/* Unificazione Tab Menu per Win98, XP e 7 */
+menu[role=tablist] button {
+  cursor: pointer;
+}
+body.theme-win98 menu[role=tablist] button {
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+  box-shadow: inset -1px 0 #0a0a0a, inset 1px 1px #dfdfdf, inset -2px 0 grey, inset 2px 2px #fff;
+  background-color: #c0c0c0;
+  margin-right: 2px;
+  padding: 2px 8px;
+}
+body.theme-win98 menu[role=tablist] button[aria-selected=true] {
+  background-color: #dfdfdf;
+  box-shadow: inset -1px 0 #0a0a0a, inset 1px 1px #fff, inset -2px 0 grey, inset 2px 2px #fff;
+  font-weight: bold;
 }
 
 /* Area editor / codice decompilato */

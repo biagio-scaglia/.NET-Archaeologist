@@ -326,7 +326,7 @@ export const App: React.FC = () => {
     : '.NET Archaeologist'
 
   return (
-    <div className="window main-window">
+    <div className="window active main-window">
       <TitleBar title={windowTitle} />
 
       <div className="window-body window-body-custom">
@@ -337,37 +337,21 @@ export const App: React.FC = () => {
         />
 
         {(solution || assembly) && (
-          <div
-            style={{
-              display: 'flex',
-              gap: 4,
-              padding: '2px 4px',
-              backgroundColor: '#d4d0c8',
-              borderBottom: '1px solid #808080',
-              fontSize: 11
-            }}
-          >
+          <div className="view-bar">
             {solution && (
               <>
                 <button
                   type="button"
-                  style={{
-                    fontWeight: viewMode === 'solution' ? 'bold' : 'normal',
-                    backgroundColor: viewMode === 'solution' ? '#c0c0c0' : undefined,
-                    cursor: 'pointer'
-                  }}
+                  className={viewMode === 'solution' ? 'active-view-tab' : ''}
+                  style={{ cursor: 'pointer' }}
                   onClick={() => setViewMode('solution')}
                 >
                   [Mappa Sistema: {solution.name}]
                 </button>
                 <button
                   type="button"
-                  style={{
-                    fontWeight: viewMode === 'sitemap360' ? 'bold' : 'normal',
-                    backgroundColor: viewMode === 'sitemap360' ? '#c0c0c0' : undefined,
-                    color: '#006633',
-                    cursor: 'pointer'
-                  }}
+                  className={viewMode === 'sitemap360' ? 'active-view-tab' : ''}
+                  style={{ cursor: 'pointer' }}
                   onClick={() => setViewMode('sitemap360')}
                 >
                   [Sitemap &amp; Flussi 360°]
@@ -376,12 +360,8 @@ export const App: React.FC = () => {
             )}
             <button
               type="button"
-              style={{
-                fontWeight: viewMode === 'diagram' ? 'bold' : 'normal',
-                backgroundColor: viewMode === 'diagram' ? '#c0c0c0' : undefined,
-                color: '#000080',
-                cursor: 'pointer'
-              }}
+              className={viewMode === 'diagram' ? 'active-view-tab' : ''}
+              style={{ cursor: 'pointer' }}
               onClick={() => setViewMode('diagram')}
             >
               [Disegno Tecnico Architetturale (Blueprint)]
@@ -389,11 +369,8 @@ export const App: React.FC = () => {
             {assembly && (
               <button
                 type="button"
-                style={{
-                  fontWeight: viewMode === 'assembly' ? 'bold' : 'normal',
-                  backgroundColor: viewMode === 'assembly' ? '#c0c0c0' : undefined,
-                  cursor: 'pointer'
-                }}
+                className={viewMode === 'assembly' ? 'active-view-tab' : ''}
+                style={{ cursor: 'pointer' }}
                 onClick={() => setViewMode('assembly')}
               >
                 [Codice Decompilato ({assembly.name})]
@@ -401,12 +378,8 @@ export const App: React.FC = () => {
             )}
             <button
               type="button"
-              style={{
-                fontWeight: viewMode === 'report' ? 'bold' : 'normal',
-                backgroundColor: viewMode === 'report' ? '#c0c0c0' : undefined,
-                color: '#800040',
-                cursor: 'pointer'
-              }}
+              className={viewMode === 'report' ? 'active-view-tab' : ''}
+              style={{ cursor: 'pointer' }}
               onClick={handleGenerateReport}
             >
               [Report Esecutivo &amp; PDF]

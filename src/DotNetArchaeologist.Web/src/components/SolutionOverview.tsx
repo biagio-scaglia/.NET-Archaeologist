@@ -40,7 +40,7 @@ export const SolutionOverview: React.FC<SolutionOverviewProps> = ({
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        backgroundColor: '#c0c0c0',
+        backgroundColor: 'var(--retro-surface)',
         padding: '6px',
         boxSizing: 'border-box',
         overflow: 'hidden',
@@ -84,41 +84,45 @@ export const SolutionOverview: React.FC<SolutionOverviewProps> = ({
         </div>
       </fieldset>
 
-      {/* Schede di navigazione Windows 98 */}
+      {/* Schede di navigazione Retro OS */}
       <menu role="tablist" style={{ marginBottom: '0px' }}>
-        <li
+        <button
+          type="button"
           role="tab"
           aria-selected={activeTab === 'services'}
           onClick={() => setActiveTab('services')}
         >
-          <a href="#services">[SVC] Servizi & Microservizi ({solution.totalServices})</a>
-        </li>
-        <li
+          [SVC] Servizi &amp; Microservizi ({solution.totalServices})
+        </button>
+        <button
+          type="button"
           role="tab"
           aria-selected={activeTab === 'databases'}
           onClick={() => setActiveTab('databases')}
         >
-          <a href="#databases">[DB] Database & Persistenza ({solution.totalDatabases})</a>
-        </li>
-        <li
+          [DB] Database &amp; Persistenza ({solution.totalDatabases})
+        </button>
+        <button
+          type="button"
           role="tab"
           aria-selected={activeTab === 'batch'}
           onClick={() => setActiveTab('batch')}
         >
-          <a href="#batch">[BAT] Processi Batch ({solution.totalBatchWorkers})</a>
-        </li>
-        <li
+          [BAT] Processi Batch ({solution.totalBatchWorkers})
+        </button>
+        <button
+          type="button"
           role="tab"
           aria-selected={activeTab === 'projects'}
           onClick={() => setActiveTab('projects')}
         >
-          <a href="#projects">[PRJ] Progetti Solution ({solution.totalProjects})</a>
-        </li>
+          [PRJ] Progetti Solution ({solution.totalProjects})
+        </button>
       </menu>
 
       {/* Contenitore principale Tab */}
       <div
-        className="window"
+        className="window active"
         role="tabpanel"
         style={{
           flex: 1,
@@ -165,16 +169,8 @@ export const SolutionOverview: React.FC<SolutionOverviewProps> = ({
                     return (
                       <div
                         key={`${svc.serviceName}-${idx}`}
+                        className={`retro-list-item ${isSelected ? 'selected' : ''}`}
                         onClick={() => setSelectedService(svc)}
-                        style={{
-                          padding: '4px 6px',
-                          marginBottom: '2px',
-                          cursor: 'pointer',
-                          backgroundColor: isSelected ? '#000080' : 'transparent',
-                          color: isSelected ? '#ffffff' : '#000000',
-                          border: isSelected ? '1px dotted #ffffff' : '1px solid transparent',
-                          fontSize: '11px',
-                        }}
                       >
                         <div style={{ fontWeight: 'bold' }}>{svc.serviceName}</div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
@@ -325,16 +321,8 @@ export const SolutionOverview: React.FC<SolutionOverviewProps> = ({
                     return (
                       <div
                         key={`${db.name}-${idx}`}
+                        className={`retro-list-item ${isSelected ? 'selected' : ''}`}
                         onClick={() => setSelectedDb(db)}
-                        style={{
-                          padding: '4px 6px',
-                          marginBottom: '2px',
-                          cursor: 'pointer',
-                          backgroundColor: isSelected ? '#000080' : 'transparent',
-                          color: isSelected ? '#ffffff' : '#000000',
-                          border: isSelected ? '1px dotted #ffffff' : '1px solid transparent',
-                          fontSize: '11px',
-                        }}
                       >
                         <div style={{ fontWeight: 'bold' }}>{db.name}</div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
@@ -496,16 +484,8 @@ export const SolutionOverview: React.FC<SolutionOverviewProps> = ({
                     return (
                       <div
                         key={`${batch.workerName}-${idx}`}
+                        className={`retro-list-item ${isSelected ? 'selected' : ''}`}
                         onClick={() => setSelectedBatch(batch)}
-                        style={{
-                          padding: '4px 6px',
-                          marginBottom: '2px',
-                          cursor: 'pointer',
-                          backgroundColor: isSelected ? '#000080' : 'transparent',
-                          color: isSelected ? '#ffffff' : '#000000',
-                          border: isSelected ? '1px dotted #ffffff' : '1px solid transparent',
-                          fontSize: '11px',
-                        }}
                       >
                         <div style={{ fontWeight: 'bold' }}>{batch.workerName}</div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
@@ -609,16 +589,8 @@ export const SolutionOverview: React.FC<SolutionOverviewProps> = ({
                   return (
                     <div
                       key={`${proj.name}-${idx}`}
+                      className={`retro-list-item ${isSelected ? 'selected' : ''}`}
                       onClick={() => setSelectedProject(proj)}
-                      style={{
-                        padding: '4px 6px',
-                        marginBottom: '2px',
-                        cursor: 'pointer',
-                        backgroundColor: isSelected ? '#000080' : 'transparent',
-                        color: isSelected ? '#ffffff' : '#000000',
-                        border: isSelected ? '1px dotted #ffffff' : '1px solid transparent',
-                        fontSize: '11px',
-                      }}
                     >
                       <div style={{ fontWeight: 'bold' }}>
                         [{proj.category.toUpperCase()}] {proj.name}

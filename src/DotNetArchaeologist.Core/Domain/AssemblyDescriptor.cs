@@ -19,7 +19,17 @@ public sealed record ManifestResourceDescriptor(
     string Name,
     string Visibility,
     long Offset,
-    string? ResourceType);
+    long SizeInBytes,
+    string? ResourceType,
+    string? MimeType = null,
+    string? PreviewDataUri = null,
+    string? HumanDescription = null)
+{
+    public ManifestResourceDescriptor(string name, string visibility, long offset, string? resourceType)
+        : this(name, visibility, offset, 0, resourceType, null, null, null)
+    {
+    }
+}
 
 /// <summary>
 /// Rappresenta una stringa costante letterale estratta dallo stream metadati #US (User Strings).

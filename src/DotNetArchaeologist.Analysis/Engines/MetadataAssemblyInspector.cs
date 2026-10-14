@@ -246,8 +246,14 @@ public sealed class MetadataAssemblyInspector : IAssemblyInspector
                 Array.Empty<string>()));
         }
 
-        // Estrazione Risorse Incorporate (ManifestResources)
+        // Estrazione Risorse Incorporate e Asset (ManifestResources)
         var manifestResources = new List<ManifestResourceDescriptor>();
+        var corHeader = peReader.PEHeaders.CorHeader;
+        var hasResourceSection = corHeader != null && corHeader.ResourcesDirectory.Size > 0;
+        var resourceSectionData = hasResourceSection
+            ? peReader.GetSectionData(corHeader!.ResourcesDirectory.RelativeVirtualAddress)
+            : default;
+
         foreach (var resHandle in metadataReader.ManifestResources)
         {
             var res = metadataReader.GetManifestResource(resHandle);
@@ -256,17 +262,107 @@ public sealed class MetadataAssemblyInspector : IAssemblyInspector
                 ? "Public"
                 : "Private";
 
-            string resType = "Embedded";
-            if (resName.EndsWith(".resources", StringComparison.OrdinalIgnoreCase))
-                resType = "CompiledResources";
-            else if (resName.EndsWith(".xml", StringComparison.OrdinalIgnoreCase) || resName.EndsWith(".config", StringComparison.OrdinalIgnoreCase))
-                resType = "ConfigurationOrXml";
-            else if (resName.EndsWith(".sql", StringComparison.OrdinalIgnoreCase))
-                resType = "SqlScript";
-            else if (resName.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
-                resType = "JsonDocument";
+            long sizeInBytes = 0;
+            string? mimeType = null;
+            string? previewDataUri = null;
 
-            manifestResources.Add(new ManifestResourceDescriptor(resName, visibility, res.Offset, resType));
+            var lower = resName.ToLowerInvariant();
+            string resType = "Embedded";
+            string humanDesc;
+
+            if (lower.EndsWith(".png"))
+            {
+                resType = "ImagePng";
+                mimeType = "image/png";
+                humanDesc = "Immagine PNG grafica o icona incorporata nell'applicazione.";
+            }
+            else if (lower.EndsWith(".jpg") || lower.EndsWith(".jpeg"))
+            {
+                resType = "ImageJpeg";
+                mimeType = "image/jpeg";
+                humanDesc = "Fotografia o grafica JPEG incorporata.";
+            }
+            else if (lower.EndsWith(".ico"))
+            {
+                resType = "Icon";
+                mimeType = "image/x-icon";
+                humanDesc = "Icona applicativa Windows per finestre o barre strumenti.";
+            }
+            else if (lower.EndsWith(".bmp"))
+            {
+                resType = "ImageBmp";
+                mimeType = "image/bmp";
+                humanDesc = "Grafica Bitmap classica di sfondo o pulsante.";
+            }
+            else if (lower.EndsWith(".gif"))
+            {
+                resType = "ImageGif";
+                mimeType = "image/gif";
+                humanDesc = "Animazione o grafica GIF leggera.";
+            }
+            else if (lower.EndsWith(".svg"))
+            {
+                resType = "VectorSvg";
+                mimeType = "image/svg+xml";
+                humanDesc = "Grafica vettoriale scalabile SVG.";
+            }
+            else if (lower.EndsWith(".resources"))
+            {
+                resType = "CompiledResources";
+                humanDesc = "Dizionario compilato di testi, etichette e icone di interfaccia Windows Forms o WPF.";
+            }
+            else if (lower.EndsWith(".xml") || lower.EndsWith(".config"))
+            {
+                resType = "ConfigurationOrXml";
+                mimeType = "application/xml";
+                humanDesc = "File di configurazione o schema XML di scambio dati.";
+            }
+            else if (lower.EndsWith(".sql"))
+            {
+                resType = "SqlScript";
+                mimeType = "text/plain";
+                humanDesc = "Script SQL di creazione o manutenzione del database.";
+            }
+            else if (lower.EndsWith(".json"))
+            {
+                resType = "JsonDocument";
+                mimeType = "application/json";
+                humanDesc = "Documento strutturato JSON di configurazione o dati predefiniti.";
+            }
+            else
+            {
+                humanDesc = "Flusso di dati o file binario incorporato nei metadati dell'applicazione.";
+            }
+
+            if (res.Implementation.IsNil && hasResourceSection && (res.Offset + 4 <= resourceSectionData.Length))
+            {
+                try
+                {
+                    var reader = resourceSectionData.GetReader((int)res.Offset, resourceSectionData.Length - (int)res.Offset);
+                    uint length = reader.ReadUInt32();
+                    sizeInBytes = length;
+
+                    if (mimeType != null && mimeType.StartsWith("image/") && length > 0 && length <= 1_500_000 && length <= reader.RemainingBytes)
+                    {
+                        var bytes = reader.ReadBytes((int)length);
+                        previewDataUri = $"data:{mimeType};base64,{Convert.ToBase64String(bytes)}";
+                    }
+                }
+                catch
+                {
+                    // Fallback in caso di lettura non conforme
+                }
+            }
+
+            manifestResources.Add(new ManifestResourceDescriptor(
+                resName,
+                visibility,
+                res.Offset,
+                sizeInBytes,
+                resType,
+                mimeType,
+                previewDataUri,
+                humanDesc));
         }
 
         // Estrazione e classificazione euristica stringhe costanti dai corpi IL (ldstr opcode)

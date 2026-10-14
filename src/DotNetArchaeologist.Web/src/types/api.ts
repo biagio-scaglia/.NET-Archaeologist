@@ -35,7 +35,11 @@ export interface ManifestResourceDescriptor {
   name: string
   visibility: 'Public' | 'Private'
   offset: number
+  sizeInBytes: number
   resourceType: string | null
+  mimeType?: string | null
+  previewDataUri?: string | null
+  humanDescription?: string | null
 }
 
 export interface ExtractedConstantString {

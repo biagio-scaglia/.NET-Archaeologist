@@ -75,5 +75,36 @@ describe('ExplorerTree Component', () => {
 
     expect(screen.getByText('IList')).toBeInTheDocument()
     expect(screen.queryByText('ArrayList')).not.toBeInTheDocument()
+
+    // Clic sul pulsante X per azzerare
+    const clearButton = screen.getByTitle('Azzera filtro di ricerca')
+    fireEvent.click(clearButton)
+    expect(screen.getByText('ArrayList')).toBeInTheDocument()
+    expect(screen.getByText('IList')).toBeInTheDocument()
+  })
+
+  it('filters types by category buttons (Classi, Interfacce, Altro)', () => {
+    render(
+      <ExplorerTree
+        namespaces={sampleNamespaces}
+        selectedTypeFullName={null}
+        onSelectType={vi.fn()}
+      />
+    )
+
+    // Filtra solo Classi
+    fireEvent.click(screen.getByTitle('Filtra solo classi e record'))
+    expect(screen.getByText('ArrayList')).toBeInTheDocument()
+    expect(screen.queryByText('IList')).not.toBeInTheDocument()
+
+    // Filtra solo Interfacce
+    fireEvent.click(screen.getByTitle('Filtra solo interfacce'))
+    expect(screen.getByText('IList')).toBeInTheDocument()
+    expect(screen.queryByText('ArrayList')).not.toBeInTheDocument()
+
+    // Torna a Tutti
+    fireEvent.click(screen.getByTitle('Mostra tutti i tipi compilati'))
+    expect(screen.getByText('ArrayList')).toBeInTheDocument()
+    expect(screen.getByText('IList')).toBeInTheDocument()
   })
 })

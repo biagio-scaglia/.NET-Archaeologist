@@ -336,6 +336,95 @@ export const ExecutiveReportView: React.FC<ExecutiveReportViewProps> = ({
               </div>
             </div>
 
+            {/* 🎙️ L'Archeologo Spiega & Risponde (Linguaggio Naturale) */}
+            <div
+              className="executive-report-card"
+              style={{
+                marginBottom: '20px',
+                border: '2px solid #000080',
+                backgroundColor: '#f8fafd',
+                padding: '12px'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <h2
+                  style={{
+                    fontSize: '14px',
+                    color: '#000080',
+                    margin: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <span>🎙️</span> L'Archeologo Spiega &amp; Risponde (Narrazione in Linguaggio Naturale)
+                </h2>
+                <span
+                  style={{
+                    fontSize: '10px',
+                    backgroundColor: '#000080',
+                    color: '#fff',
+                    padding: '2px 6px',
+                    borderRadius: '2px',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  AUDIO-GUIDA ARCHITETTURALE
+                </span>
+              </div>
+
+              {/* Box Discorsivo Parlante */}
+              <div
+                style={{
+                  fontSize: '12px',
+                  lineHeight: '1.65',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #b0c4de',
+                  padding: '12px',
+                  borderRadius: '3px',
+                  marginBottom: '12px',
+                  color: '#1a1a2e',
+                  boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)'
+                }}
+              >
+                <div style={{ fontWeight: 'bold', color: '#000080', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>💬</span> <em>L'Archeologo racconta il sistema:</em>
+                </div>
+                <div style={{ whiteSpace: 'pre-line' }}>
+                  {report.conversationalWalkthrough || report.executiveSummary}
+                </div>
+              </div>
+
+              {/* Domande e Risposte sul Sistema */}
+              {report.naturalLanguageInsights && report.naturalLanguageInsights.length > 0 && (
+                <div style={{ marginTop: '8px' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#000080', marginBottom: '8px' }}>
+                    ❓ Domande &amp; Risposte Chiave sul Sistema:
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {report.naturalLanguageInsights.map((qna, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #d4d0c8',
+                          padding: '8px 10px',
+                          borderRadius: '2px'
+                        }}
+                      >
+                        <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#800000', marginBottom: '3px' }}>
+                          Q: {qna.question}
+                        </div>
+                        <div style={{ fontSize: '11px', lineHeight: '1.5', color: '#222' }}>
+                          <strong>R:</strong> {qna.answer}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* 2. Superficie Servizi & API */}
             {report.serviceCatalog.length > 0 && (
               <div className="executive-report-card" style={{ marginBottom: '20px' }}>

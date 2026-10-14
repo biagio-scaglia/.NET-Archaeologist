@@ -210,4 +210,23 @@ describe('TechnicalDiagram Component', () => {
     // Il database o il batch non devono apparire
     expect(screen.queryByText('ContosoErpDbContext')).not.toBeInTheDocument()
   })
+
+  it('renders natural language connections explanation panel and audio-guide walkthrough', () => {
+    const handleOpen = vi.fn()
+    render(
+      <TechnicalDiagram
+        solution={mockSolution}
+        assembly={null}
+        onOpenAssemblyPath={handleOpen}
+      />
+    )
+
+    // Verifica presenza del pulsante di attivazione spiegazione
+    expect(screen.getByRole('button', { name: /L'Archeologo Spiega Connessioni/i })).toBeInTheDocument()
+
+    // Verifica presenza della narrazione parlata iniziale
+    expect(screen.getByText(/Benvenuto nella mappa delle connessioni del sistema!/i)).toBeInTheDocument()
+    expect(screen.getByText(/L'Archeologo racconta:/i)).toBeInTheDocument()
+    expect(screen.getByText(/Domande Frequenti su queste Connessioni/i)).toBeInTheDocument()
+  })
 })

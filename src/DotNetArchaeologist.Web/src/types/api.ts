@@ -257,12 +257,20 @@ export interface ModernizationStep {
   riskLevel: string
 }
 
+export interface NaturalLanguageQnA {
+  question: string
+  answer: string
+  topic: string
+}
+
 export interface ExecutiveReport {
   title: string
   targetName: string
   targetType: string
   generatedAt: string
   executiveSummary: string
+  conversationalWalkthrough?: string
+  naturalLanguageInsights?: NaturalLanguageQnA[]
   techDebtScore: number
   techDebtRating: string
   architecturalStyle: string

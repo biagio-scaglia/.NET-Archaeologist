@@ -55,6 +55,14 @@ public sealed record ModernizationStep(
     string RiskLevel);
 
 /// <summary>
+/// Domanda e risposta chiave in linguaggio naturale per comprendere l'ecosistema archeologico.
+/// </summary>
+public sealed record NaturalLanguageQnA(
+    string Question,
+    string Answer,
+    string Topic);
+
+/// <summary>
 /// Report esecutivo in linguaggio naturale per architetti, tech lead e stakeholder aziendali.
 /// </summary>
 public sealed record ExecutiveReport(
@@ -63,6 +71,8 @@ public sealed record ExecutiveReport(
     string TargetType,
     DateTimeOffset GeneratedAt,
     string ExecutiveSummary,
+    string ConversationalWalkthrough,
+    IReadOnlyList<NaturalLanguageQnA> NaturalLanguageInsights,
     int TechDebtScore,
     string TechDebtRating,
     string ArchitecturalStyle,
@@ -72,4 +82,45 @@ public sealed record ExecutiveReport(
     IReadOnlyList<ReportBatchEntry> BatchWorkers,
     IReadOnlyList<ReportRiskEntry> IdentifiedRisks,
     IReadOnlyList<ModernizationStep> ModernizationRoadmap,
-    string MarkdownContent);
+    string MarkdownContent)
+{
+    /// <summary>
+    /// Costruttore di compatibilità per istanze senza narrazione estesa.
+    /// </summary>
+    public ExecutiveReport(
+        string title,
+        string targetName,
+        string targetType,
+        DateTimeOffset generatedAt,
+        string executiveSummary,
+        int techDebtScore,
+        string techDebtRating,
+        string architecturalStyle,
+        IReadOnlyList<string> keyFindings,
+        IReadOnlyList<ReportServiceEntry> serviceCatalog,
+        IReadOnlyList<ReportPersistenceEntry> dataPersistence,
+        IReadOnlyList<ReportBatchEntry> batchWorkers,
+        IReadOnlyList<ReportRiskEntry> identifiedRisks,
+        IReadOnlyList<ModernizationStep> modernizationRoadmap,
+        string markdownContent)
+        : this(
+            title,
+            targetName,
+            targetType,
+            generatedAt,
+            executiveSummary,
+            ConversationalWalkthrough: executiveSummary,
+            NaturalLanguageInsights: Array.Empty<NaturalLanguageQnA>(),
+            techDebtScore,
+            techDebtRating,
+            architecturalStyle,
+            keyFindings,
+            serviceCatalog,
+            dataPersistence,
+            batchWorkers,
+            identifiedRisks,
+            modernizationRoadmap,
+            markdownContent)
+    {
+    }
+}

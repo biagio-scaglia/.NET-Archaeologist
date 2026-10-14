@@ -636,6 +636,41 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
                 </p>
               </fieldset>
 
+              {/* Box Discorsivo Parlante */}
+              <div
+                style={{
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #b0c4de',
+                  borderRadius: '2px',
+                  padding: '8px',
+                  fontSize: '11px',
+                  lineHeight: '1.55',
+                  marginBottom: '8px',
+                  color: '#1a1a2e',
+                  boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.06)',
+                }}
+              >
+                <div style={{ fontWeight: 'bold', color: '#000080', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>🎙️</span>
+                  <em>L'Archeologo racconta questo percorso:</em>
+                </div>
+                <div>
+                  {`Questo componente appartiene alla sezione '${selectedItem.section}'. ${selectedItem.description} ${
+                    selectedItem.connectedServices.length > 0
+                      ? `Comunica direttamente con ${selectedItem.connectedServices.length} servizio/i di backend (${selectedItem.connectedServices.join(', ')}).`
+                      : ''
+                  } ${
+                    selectedItem.connectedTables.length > 0
+                      ? `Interagisce con le tabelle di database: ${selectedItem.connectedTables.join(', ')}.`
+                      : ''
+                  } ${
+                    selectedItem.connectedBatch.length > 0
+                      ? `È sincronizzato o correlato ai processi batch: ${selectedItem.connectedBatch.join(', ')}.`
+                      : ''
+                  }`}
+                </div>
+              </div>
+
               <fieldset style={{ marginBottom: '8px', backgroundColor: '#fff' }}>
                 <legend style={{ fontWeight: 'bold' }}>Relazioni a 360°</legend>
                 <div style={{ marginBottom: '6px' }}>

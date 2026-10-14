@@ -4,6 +4,7 @@ import type {
   AssemblyDescriptor,
   ArchitectureGraphDto,
 } from '../types/api'
+import { narrateArchitectureConnections } from '../utils/architectureNarrator'
 
 interface TechnicalDiagramProps {
   solution: SolutionDescriptor | null
@@ -65,6 +66,9 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
   const [filter, setFilter] = useState<LayerFilter>('all')
   const [edgeMode, setEdgeMode] = useState<EdgeMode>('focus')
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+  const [selectedEdge, setSelectedEdge] = useState<DiagramEdge | null>(null)
+  const [activeSideTab, setActiveSideTab] = useState<'archaeologist' | 'specs'>('archaeologist')
+  const [showArchaeologistPanel, setShowArchaeologistPanel] = useState<boolean>(true)
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [diagramView, setDiagramView] = useState<'system' | 'graph'>(solution ? 'system' : 'graph')
   const [showExternal, setShowExternal] = useState<boolean>(false)
@@ -583,6 +587,16 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
     [nodes, effectiveSelectedNodeId]
   )
 
+  const narration = useMemo(() => {
+    return narrateArchitectureConnections(
+      nodes,
+      edges,
+      selectedNode,
+      selectedEdge,
+      solution
+    )
+  }, [nodes, edges, selectedNode, selectedEdge, solution])
+
   // Calcolo dinamico dell'area canvas in base alla posizione reale di TUTTI i nodi
   const canvasBounds = useMemo(() => {
     if (nodes.length === 0) {
@@ -713,6 +727,30 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
               Includi Tipi Esterni
             </label>
           )}
+
+          <span>|</span>
+          <button
+            type="button"
+            onClick={() => {
+              setShowArchaeologistPanel(p => !p)
+              setActiveSideTab('archaeologist')
+            }}
+            style={{
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              padding: '2px 8px',
+              fontSize: '11px',
+              backgroundColor: showArchaeologistPanel ? '#000080' : undefined,
+              color: showArchaeologistPanel ? '#ffffff' : undefined,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+            title="Attiva o disattiva il pannello di narrazione in linguaggio naturale delle connessioni"
+          >
+            <span>🎙️</span>
+            <span>L'Archeologo Spiega Connessioni</span>
+          </button>
         </div>
 
         {/* Ricerca e Zoom */}
@@ -888,33 +926,53 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                   const dx = (x2 - x1) * 0.5
                   const pathData = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`
 
+                  const isEdgeSelected = selectedEdge !== null && selectedEdge.fromId === e.fromId && selectedEdge.toId === e.toId
                   const isInherit = e.style === 'inheritance'
                   const isImplements = e.style === 'implements'
                   const isConnectedToSelected = effectiveSelectedNodeId === e.fromId || effectiveSelectedNodeId === e.toId
-                  const isHighlight = isConnectedToSelected
+                  const isHighlight = isConnectedToSelected || isEdgeSelected
 
-                  // In modalità Focus mostra gli archi solo quando un nodo è selezionato
+                  // In modalità Focus mostra gli archi solo quando un nodo o l'arco è selezionato
                   if (edgeMode === 'focus') {
-                    if (!effectiveSelectedNodeId || !isConnectedToSelected) {
+                    if (!isEdgeSelected && (!effectiveSelectedNodeId || !isConnectedToSelected)) {
                       return null
                     }
                   }
 
-                  const opacity = isHighlight
+                  const opacity = isEdgeSelected
                     ? 1
-                    : (effectiveSelectedNodeId ? 0.05 : (edgeMode === 'all' ? 0.7 : 0.22))
-                  const strokeWidth = isHighlight ? 2.5 : 1.2
-                  const strokeColor = isHighlight
-                    ? '#0000ff'
-                    : (isInherit ? '#000080' : isImplements ? '#880088' : e.style === 'data' ? '#006633' : '#336699')
-                  const markerId = isHighlight
+                    : (isHighlight
+                      ? 1
+                      : (effectiveSelectedNodeId || selectedEdge ? 0.05 : (edgeMode === 'all' ? 0.7 : 0.22)))
+                  const strokeWidth = isEdgeSelected ? 3.5 : (isHighlight ? 2.5 : 1.2)
+                  const strokeColor = isEdgeSelected
+                    ? '#ff8800'
+                    : (isHighlight
+                      ? '#0000ff'
+                      : (isInherit ? '#000080' : isImplements ? '#880088' : e.style === 'data' ? '#006633' : '#336699'))
+                  const markerId = isEdgeSelected || isHighlight
                     ? 'url(#arrow-highlight)'
                     : (isInherit ? 'url(#arrow-inherit)' : isImplements ? 'url(#arrow-implements)' : 'url(#arrow-tech)')
 
-                  const showLabel = isHighlight || (edgeMode === 'all' && edges.length <= 6)
+                  const showLabel = isEdgeSelected || isHighlight || (edgeMode === 'all' && edges.length <= 6)
 
                   return (
                     <g key={`edge-${idx}`} style={{ opacity }}>
+                      {/* Area invisibile spessa per facilitare il click sulla linea */}
+                      <path
+                        d={pathData}
+                        fill="none"
+                        stroke="transparent"
+                        strokeWidth="14"
+                        style={{ cursor: 'pointer' }}
+                        onClick={ev => {
+                          ev.stopPropagation()
+                          setSelectedEdge(e)
+                          setSelectedNodeId(null)
+                          setShowArchaeologistPanel(true)
+                          setActiveSideTab('archaeologist')
+                        }}
+                      />
                       <path
                         d={pathData}
                         fill="none"
@@ -922,9 +980,26 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                         strokeWidth={strokeWidth}
                         strokeDasharray={isImplements ? '4 3' : 'none'}
                         markerEnd={markerId}
+                        style={{ cursor: 'pointer' }}
+                        onClick={ev => {
+                          ev.stopPropagation()
+                          setSelectedEdge(e)
+                          setSelectedNodeId(null)
+                          setShowArchaeologistPanel(true)
+                          setActiveSideTab('archaeologist')
+                        }}
                       />
                       {e.label && showLabel && (
-                        <g>
+                        <g
+                          style={{ cursor: 'pointer' }}
+                          onClick={ev => {
+                            ev.stopPropagation()
+                            setSelectedEdge(e)
+                            setSelectedNodeId(null)
+                            setShowArchaeologistPanel(true)
+                            setActiveSideTab('archaeologist')
+                          }}
+                        >
                           <rect
                             x={(x1 + x2) / 2 - 50}
                             y={(y1 + y2) / 2 - 10}
@@ -933,13 +1008,13 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                             rx="3"
                             fill="#ffffff"
                             stroke={strokeColor}
-                            strokeWidth="1"
+                            strokeWidth={isEdgeSelected ? '2' : '1'}
                             opacity="0.95"
                           />
                           <text
                             x={(x1 + x2) / 2}
                             y={(y1 + y2) / 2}
-                            fill="#000066"
+                            fill={isEdgeSelected ? '#cc5500' : '#000066'}
                             fontSize="9"
                             fontFamily="monospace"
                             fontWeight="bold"
@@ -968,7 +1043,12 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
               return (
                 <div
                   key={node.id}
-                  onClick={() => setSelectedNodeId(node.id)}
+                  onClick={() => {
+                    setSelectedNodeId(node.id)
+                    setSelectedEdge(null)
+                    setShowArchaeologistPanel(true)
+                    setActiveSideTab('archaeologist')
+                  }}
                   style={{
                     position: 'absolute',
                     left: `${node.x}px`,
@@ -1150,11 +1230,11 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
           </div>
         )}
 
-        {/* Riquadro Dettaglio Tecnico Laterale Win98 */}
-        {selectedNode && (
+        {/* Riquadro Dettaglio Tecnico & Spiegazione delle Connessioni Win98 */}
+        {(showArchaeologistPanel || selectedNode || selectedEdge) && (
           <div
             style={{
-              width: '300px',
+              width: '320px',
               backgroundColor: '#dfdfdf',
               borderLeft: '2px groove #fff',
               display: 'flex',
@@ -1166,76 +1246,334 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
               zIndex: 5,
             }}
           >
+            {/* Header Finestra Laterale */}
             <div
               style={{
                 backgroundColor: '#000080',
                 color: '#fff',
                 padding: '4px 6px',
                 fontWeight: 'bold',
-                marginBottom: '8px',
+                marginBottom: '6px',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
               }}
             >
-              <span>Dettaglio Componente CAD</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span>🎙️</span>
+                <span title={narration.headline}>{narration.headline}</span>
+                <span style={{ fontSize: '9px', opacity: 0.85, marginLeft: '2px' }}>Dettaglio Componente CAD</span>
+              </span>
               <button
-                onClick={() => setSelectedNodeId(null)}
-                style={{ padding: '0 4px', fontSize: '10px', cursor: 'pointer' }}
+                type="button"
+                onClick={() => {
+                  setSelectedNodeId(null)
+                  setSelectedEdge(null)
+                  setShowArchaeologistPanel(false)
+                }}
+                style={{ padding: '0 4px', fontSize: '10px', cursor: 'pointer', flexShrink: 0 }}
+                title="Chiudi pannello laterale"
               >
                 X
               </button>
             </div>
 
-            <fieldset style={{ marginBottom: '8px' }}>
-              <legend>Specifiche Tecniche</legend>
-              <div><strong>Nome:</strong> {selectedNode.title}</div>
-              <div><strong>Ruolo:</strong> [{selectedNode.category}]</div>
-              <div><strong>Tecnologia:</strong> {selectedNode.technology}</div>
-              {selectedNode.subtitle && (
-                <div style={{ wordBreak: 'break-all', marginTop: '2px' }}>
-                  <strong>Riferimento:</strong> {selectedNode.subtitle}
-                </div>
+            {/* Schede / Tab di Selezione */}
+            <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setActiveSideTab('archaeologist')}
+                style={{
+                  flex: 1,
+                  fontWeight: activeSideTab === 'archaeologist' ? 'bold' : 'normal',
+                  backgroundColor: activeSideTab === 'archaeologist' ? '#ffffff' : '#d4d0c8',
+                  border: '1px solid #808080',
+                  padding: '3px 4px',
+                  cursor: 'pointer',
+                  fontSize: '10px',
+                }}
+              >
+                🎙️ Spiegazione Parlata
+              </button>
+              {selectedNode && (
+                <button
+                  type="button"
+                  onClick={() => setActiveSideTab('specs')}
+                  style={{
+                    flex: 1,
+                    fontWeight: activeSideTab === 'specs' ? 'bold' : 'normal',
+                    backgroundColor: activeSideTab === 'specs' ? '#ffffff' : '#d4d0c8',
+                    border: '1px solid #808080',
+                    padding: '3px 4px',
+                    cursor: 'pointer',
+                    fontSize: '10px',
+                  }}
+                >
+                  📐 Specifiche CAD
+                </button>
               )}
-            </fieldset>
+            </div>
 
-            <fieldset style={{ marginBottom: '8px', flex: 1 }}>
-              <legend>Elementi &amp; Interfacce ({selectedNode.items.length})</legend>
-              <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '10px' }}>
-                {selectedNode.items.map((it, idx) => (
-                  <li key={idx} style={{ marginBottom: '3px', wordBreak: 'break-all' }}>{it}</li>
-                ))}
-              </ul>
-            </fieldset>
+            {/* TAB: L'ARCHEOLOGO SPIEGA LE CONNESSIONI (Linguaggio Naturale) */}
+            {activeSideTab === 'archaeologist' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                {/* Badge di contesto */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span
+                    style={{
+                      fontSize: '9px',
+                      backgroundColor: '#000080',
+                      color: '#ffffff',
+                      padding: '2px 5px',
+                      borderRadius: '2px',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    {narration.badge}
+                  </span>
+                  {(selectedNode || selectedEdge) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedNodeId(null)
+                        setSelectedEdge(null)
+                      }}
+                      style={{ fontSize: '10px', padding: '1px 6px', cursor: 'pointer' }}
+                    >
+                      [Mappa Globale]
+                    </button>
+                  )}
+                </div>
 
-            {selectedNode.assemblyPath && (
-              <button
-                onClick={() => onOpenAssemblyPath(selectedNode.assemblyPath!)}
-                style={{
-                  padding: '4px 8px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  width: '100%',
-                  marginTop: '4px',
-                }}
-              >
-                Decompila Codice Assembly &gt;&gt;
-              </button>
-            )}
+                {/* Box Discorsivo Parlante Audio-Guida */}
+                <div
+                  style={{
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #b0c4de',
+                    borderRadius: '2px',
+                    padding: '8px',
+                    fontSize: '11px',
+                    lineHeight: '1.55',
+                    color: '#1a1a2e',
+                    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.06)',
+                  }}
+                >
+                  <div style={{ fontWeight: 'bold', color: '#000080', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span>💬</span>
+                    <em>L'Archeologo racconta:</em>
+                  </div>
+                  <div style={{ whiteSpace: 'pre-line' }}>{narration.walkthrough}</div>
+                </div>
 
-            {selectedNode.typeFullName && onSelectType && (
-              <button
-                onClick={() => onSelectType(selectedNode.typeFullName!)}
-                style={{
-                  padding: '4px 8px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  width: '100%',
-                  marginTop: '4px',
-                }}
-              >
-                Visualizza Classe nel Decompilatore &gt;&gt;
-              </button>
+                {/* Connessioni in Ingresso (Inflow) */}
+                {narration.inflow.length > 0 && (
+                  <fieldset style={{ margin: 0, padding: '6px' }}>
+                    <legend style={{ fontWeight: 'bold', color: '#000080' }}>
+                      📥 Chiamate Ricevute (Inflow: {narration.inflow.length})
+                    </legend>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {narration.inflow.map((inItem, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            backgroundColor: '#f5f7fa',
+                            border: '1px solid #d4d0c8',
+                            padding: '4px 6px',
+                            fontSize: '10px',
+                            borderRadius: '2px',
+                          }}
+                        >
+                          <div style={{ fontWeight: 'bold', color: '#000080' }}>
+                            {inItem.connectedNodeTitle} <span style={{ fontWeight: 'normal', color: '#666' }}>[{inItem.connectedNodeCategory}]</span>
+                          </div>
+                          <div style={{ color: '#333', marginTop: '1px' }}>{inItem.naturalExplanation}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </fieldset>
+                )}
+
+                {/* Connessioni in Uscita (Outflow) */}
+                {narration.outflow.length > 0 && (
+                  <fieldset style={{ margin: 0, padding: '6px' }}>
+                    <legend style={{ fontWeight: 'bold', color: '#006633' }}>
+                      📤 Dipendenze a Valle (Outflow: {narration.outflow.length})
+                    </legend>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {narration.outflow.map((outItem, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            backgroundColor: '#f5fbf7',
+                            border: '1px solid #c8dcd0',
+                            padding: '4px 6px',
+                            fontSize: '10px',
+                            borderRadius: '2px',
+                          }}
+                        >
+                          <div style={{ fontWeight: 'bold', color: '#006633' }}>
+                            {outItem.connectedNodeTitle} <span style={{ fontWeight: 'normal', color: '#666' }}>[{outItem.connectedNodeCategory}]</span>
+                          </div>
+                          <div style={{ color: '#333', marginTop: '1px' }}>{outItem.naturalExplanation}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </fieldset>
+                )}
+
+                {/* Verdetto su Accoppiamento e Rischio */}
+                <div
+                  style={{
+                    backgroundColor: '#fffbe6',
+                    border: '1px solid #ffe58f',
+                    padding: '6px 8px',
+                    borderRadius: '2px',
+                    fontSize: '10px',
+                    lineHeight: '1.45',
+                  }}
+                >
+                  <div style={{ fontWeight: 'bold', color: '#874d00', marginBottom: '2px' }}>
+                    ⚡ Analisi di Accoppiamento:
+                  </div>
+                  <div>{narration.couplingInsight}</div>
+                </div>
+
+                {/* Raccomandazione Archeologica */}
+                <div
+                  style={{
+                    backgroundColor: '#e6f7ff',
+                    border: '1px solid #91d5ff',
+                    padding: '6px 8px',
+                    borderRadius: '2px',
+                    fontSize: '10px',
+                    lineHeight: '1.45',
+                  }}
+                >
+                  <div style={{ fontWeight: 'bold', color: '#0050b3', marginBottom: '2px' }}>
+                    💡 Consiglio di Modernizzazione:
+                  </div>
+                  <div>{narration.recommendation}</div>
+                </div>
+
+                {/* Domande e Risposte Rapide */}
+                {narration.interactiveQuestions.length > 0 && (
+                  <fieldset style={{ margin: 0, padding: '6px' }}>
+                    <legend style={{ fontWeight: 'bold', color: '#333' }}>
+                      ❓ Domande Frequenti su queste Connessioni
+                    </legend>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {narration.interactiveQuestions.map((q, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            backgroundColor: '#ffffff',
+                            border: '1px solid #e0e0e0',
+                            padding: '5px 7px',
+                            fontSize: '10px',
+                          }}
+                        >
+                          <div style={{ fontWeight: 'bold', color: '#800000', marginBottom: '2px' }}>
+                            Q: {q.question}
+                          </div>
+                          <div style={{ color: '#222', lineHeight: '1.4' }}>
+                            <strong>R:</strong> {q.answer}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </fieldset>
+                )}
+
+                {/* Pulsanti Rapidi di Decompilazione se nodo selezionato */}
+                {selectedNode?.assemblyPath && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenAssemblyPath(selectedNode.assemblyPath!)}
+                    style={{
+                      padding: '4px 8px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      width: '100%',
+                      marginTop: '4px',
+                    }}
+                  >
+                    Decompila Codice Assembly &gt;&gt;
+                  </button>
+                )}
+                {selectedNode?.typeFullName && onSelectType && (
+                  <button
+                    type="button"
+                    onClick={() => onSelectType(selectedNode.typeFullName!)}
+                    style={{
+                      padding: '4px 8px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      width: '100%',
+                      marginTop: '4px',
+                    }}
+                  >
+                    Visualizza Classe nel Decompilatore &gt;&gt;
+                  </button>
+                )}
+              </div>
+            ) : (
+              /* TAB: SPECIFICHE CAD TRADIZIONALI */
+              selectedNode && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                  <fieldset style={{ margin: 0, padding: '6px' }}>
+                    <legend>Specifiche Tecniche</legend>
+                    <div><strong>Nome:</strong> {selectedNode.title}</div>
+                    <div><strong>Ruolo:</strong> [{selectedNode.category}]</div>
+                    <div><strong>Tecnologia:</strong> {selectedNode.technology}</div>
+                    {selectedNode.subtitle && (
+                      <div style={{ wordBreak: 'break-all', marginTop: '2px' }}>
+                        <strong>Riferimento:</strong> {selectedNode.subtitle}
+                      </div>
+                    )}
+                  </fieldset>
+
+                  <fieldset style={{ margin: 0, padding: '6px', flex: 1 }}>
+                    <legend>Elementi &amp; Interfacce ({selectedNode.items.length})</legend>
+                    <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '10px' }}>
+                      {selectedNode.items.map((it, idx) => (
+                        <li key={idx} style={{ marginBottom: '3px', wordBreak: 'break-all' }}>{it}</li>
+                      ))}
+                    </ul>
+                  </fieldset>
+
+                  {selectedNode.assemblyPath && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenAssemblyPath(selectedNode.assemblyPath!)}
+                      style={{
+                        padding: '4px 8px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        width: '100%',
+                        marginTop: '4px',
+                      }}
+                    >
+                      Decompila Codice Assembly &gt;&gt;
+                    </button>
+                  )}
+
+                  {selectedNode.typeFullName && onSelectType && (
+                    <button
+                      type="button"
+                      onClick={() => onSelectType(selectedNode.typeFullName!)}
+                      style={{
+                        padding: '4px 8px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        width: '100%',
+                        marginTop: '4px',
+                      }}
+                    >
+                      Visualizza Classe nel Decompilatore &gt;&gt;
+                    </button>
+                  )}
+                </div>
+              )
             )}
           </div>
         )}

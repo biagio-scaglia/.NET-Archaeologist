@@ -10,6 +10,14 @@ describe('ExecutiveReportView Component', () => {
     targetType: 'Solution',
     generatedAt: '2026-10-14T10:00:00.000Z',
     executiveSummary: "L'analisi architetturale condotta sulla soluzione 'ContosoERP' evidenzia un'architettura enterprise legacy con servizi WCF e accesso diretto a database.",
+    conversationalWalkthrough: "Benvenuto nell'audit di ContosoERP! Questo sistema presenta una struttura N-Tier classica degli anni 2010.",
+    naturalLanguageInsights: [
+      {
+        question: 'Come sono gestite le chiamate di rete?',
+        answer: 'I contratti WCF operano su protocollo SOAP.',
+        topic: 'Network'
+      }
+    ],
     techDebtScore: 75,
     techDebtRating: 'D - Legacy Critico (Consigliata Migrazione)',
     architecturalStyle: 'Monolite N-Tier Enterprise con Servizi SOAP WCF e Processi Batch',
@@ -78,6 +86,9 @@ describe('ExecutiveReportView Component', () => {
     expect(screen.getByText('ContosoErpDbContext')).toBeInTheDocument()
     expect(screen.getAllByText(/BillingBatchWorker/i).length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText(/\[ALTA\] Contratti WCF Legacy/i)).toBeInTheDocument()
+    expect(screen.getByText(/Benvenuto nell'audit di ContosoERP!/i)).toBeInTheDocument()
+    expect(screen.getByText(/Come sono gestite le chiamate di rete\?/i)).toBeInTheDocument()
+    expect(screen.getByText(/I contratti WCF operano su protocollo SOAP\./i)).toBeInTheDocument()
   })
 
   it('triggers window.print and clipboard actions', async () => {

@@ -182,8 +182,27 @@ public sealed class ExecutiveReportGenerator : IExecutiveReportGenerator
                 RiskLevel: "Basso")
         };
 
-        // Generazione del report in formato Markdown
-        var md = GenerateMarkdownReport(solution.Name, "Solution .NET", now, executiveSummary, debtScore, debtRating, architecturalStyle, keyFindings, serviceCatalog, dataPersistence, batchWorkers, risks, roadmap);
+        // Narrazione colloquiale in linguaggio naturale dell'Archeologo
+        var conversationalWalkthrough = BuildSolutionConversationalWalkthrough(solution, architecturalStyle, debtScore, debtRating, hasWcf, hasWebApi, hasObjectContext, hasStoredProcs, hasBatch);
+        var naturalLanguageInsights = BuildSolutionNaturalLanguageQnA(solution, hasWcf, hasWebApi, hasObjectContext, hasStoredProcs, hasBatch);
+
+        // Generazione del report in formato Markdown con la sezione parlata
+        var md = GenerateMarkdownReport(
+            solution.Name,
+            "Solution .NET",
+            now,
+            executiveSummary,
+            conversationalWalkthrough,
+            naturalLanguageInsights,
+            debtScore,
+            debtRating,
+            architecturalStyle,
+            keyFindings,
+            serviceCatalog,
+            dataPersistence,
+            batchWorkers,
+            risks,
+            roadmap);
 
         return new ExecutiveReport(
             Title: $"Report Architetturale Esecutivo: {solution.Name}",
@@ -191,6 +210,8 @@ public sealed class ExecutiveReportGenerator : IExecutiveReportGenerator
             TargetType: "Solution",
             GeneratedAt: now,
             ExecutiveSummary: executiveSummary,
+            ConversationalWalkthrough: conversationalWalkthrough,
+            NaturalLanguageInsights: naturalLanguageInsights,
             TechDebtScore: debtScore,
             TechDebtRating: debtRating,
             ArchitecturalStyle: architecturalStyle,
@@ -261,7 +282,25 @@ public sealed class ExecutiveReportGenerator : IExecutiveReportGenerator
                 RiskLevel: "Basso")
         };
 
-        var md = GenerateMarkdownReport(assembly.Name, "Assembly Binario", now, executiveSummary, debtScore, debtRating, "Modulo Compilato CLI", keyFindings, Array.Empty<ReportServiceEntry>(), Array.Empty<ReportPersistenceEntry>(), Array.Empty<ReportBatchEntry>(), risks, roadmap);
+        var conversationalWalkthrough = BuildAssemblyConversationalWalkthrough(assembly, isNetFramework, debtScore, debtRating);
+        var naturalLanguageInsights = BuildAssemblyNaturalLanguageQnA(assembly, isNetFramework);
+
+        var md = GenerateMarkdownReport(
+            assembly.Name,
+            "Assembly Binario",
+            now,
+            executiveSummary,
+            conversationalWalkthrough,
+            naturalLanguageInsights,
+            debtScore,
+            debtRating,
+            "Modulo Compilato CLI",
+            keyFindings,
+            Array.Empty<ReportServiceEntry>(),
+            Array.Empty<ReportPersistenceEntry>(),
+            Array.Empty<ReportBatchEntry>(),
+            risks,
+            roadmap);
 
         return new ExecutiveReport(
             Title: $"Report Architetturale Esecutivo: {assembly.Name}",
@@ -269,6 +308,8 @@ public sealed class ExecutiveReportGenerator : IExecutiveReportGenerator
             TargetType: "Assembly",
             GeneratedAt: now,
             ExecutiveSummary: executiveSummary,
+            ConversationalWalkthrough: conversationalWalkthrough,
+            NaturalLanguageInsights: naturalLanguageInsights,
             TechDebtScore: debtScore,
             TechDebtRating: debtRating,
             ArchitecturalStyle: "Modulo Compilato CLI",
@@ -286,6 +327,8 @@ public sealed class ExecutiveReportGenerator : IExecutiveReportGenerator
         string targetType,
         DateTimeOffset date,
         string executiveSummary,
+        string conversationalWalkthrough,
+        IReadOnlyList<NaturalLanguageQnA> qnaList,
         int debtScore,
         string debtRating,
         string architecturalStyle,
@@ -317,6 +360,24 @@ public sealed class ExecutiveReportGenerator : IExecutiveReportGenerator
             sb.AppendLine($"- {finding}");
         }
         sb.AppendLine();
+
+        sb.AppendLine("### 🎙️ L'Archeologo Spiega (Narrazione in Linguaggio Naturale)");
+        sb.AppendLine();
+        sb.AppendLine(conversationalWalkthrough);
+        sb.AppendLine();
+
+        if (qnaList.Count > 0)
+        {
+            sb.AppendLine("### ❓ Domande & Risposte Chiave sul Sistema");
+            sb.AppendLine();
+            foreach (var qna in qnaList)
+            {
+                sb.AppendLine($"#### 🔹 {qna.Question}");
+                sb.AppendLine();
+                sb.AppendLine(qna.Answer);
+                sb.AppendLine();
+            }
+        }
 
         if (services.Count > 0)
         {
@@ -390,5 +451,161 @@ public sealed class ExecutiveReportGenerator : IExecutiveReportGenerator
         sb.AppendLine("*Documento generato automaticamente da .NET Archaeologist - Architettura & Reverse Engineering a Zero-Execution.*");
 
         return sb.ToString();
+    }
+
+    private static string BuildSolutionConversationalWalkthrough(
+        SolutionDescriptor solution,
+        string architecturalStyle,
+        int debtScore,
+        string debtRating,
+        bool hasWcf,
+        bool hasWebApi,
+        bool hasObjectContext,
+        bool hasStoredProcs,
+        bool hasBatch)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"Se dovessimo spiegare questa soluzione come davanti a una lavagna con un collega: **{solution.Name}** è un'architettura enterprise articolata su **{solution.TotalProjects} progetti distinti**, il cui stile complessivo è identificabile come *{architecturalStyle}*.");
+        sb.AppendLine();
+        sb.AppendLine($"Il cuore del sistema è progettato per gestire flussi di business aziendali mediante una separazione tra esposizione, logica e persistenza.");
+
+        if (solution.Services.Count > 0)
+        {
+            var svcNames = string.Join(", ", solution.Services.Select(s => $"`{s.ServiceName}`"));
+            sb.AppendLine();
+            sb.AppendLine($"Dal punto di vista dell'integrazione, il sistema espone **{solution.TotalServices} servizi** ({svcNames}), offrendo un totale di **{solution.Services.Sum(s => s.Endpoints.Count)} operazioni callable**.");
+            if (hasWcf)
+            {
+                sb.AppendLine("Questi servizi comunicano tramite contratti WCF (SOAP) fortemente tipizzati. Questo significa che i client devono condividere i contratti d'interfaccia o generare proxy WSDL dedicati, legando l'infrastruttura al mondo Windows/IIS.");
+            }
+            if (hasWebApi)
+            {
+                sb.AppendLine("Sono presenti inoltre controller o endpoint REST/Web API, che aprono il sistema a client moderni, browser o integrazioni HTTP standard.");
+            }
+        }
+        else
+        {
+            sb.AppendLine();
+            sb.AppendLine("Non sono stati rilevati servizi web o endpoint di rete espliciti: la soluzione opera prevalentemente come insieme di librerie di classe, processi da riga di comando o interfacce utente desktop.");
+        }
+
+        if (solution.Databases.Count > 0)
+        {
+            var dbNames = string.Join(", ", solution.Databases.Select(d => $"`{d.Name}`"));
+            sb.AppendLine();
+            sb.AppendLine($"La persistenza dei dati fa perno su **{solution.TotalDatabases} componenti di accesso dati** ({dbNames}), con **{solution.Databases.Sum(d => d.EntitiesOrTables.Count)} tabelle mappate**.");
+            if (hasStoredProcs)
+            {
+                var procsCount = solution.Databases.Sum(d => d.DetectedStoredProceduresOrQueries.Count);
+                sb.AppendLine($"Attenzione: sono state rintracciate ben **{procsCount} chiamate dirette a stored procedure o query T-SQL** cablate nel codice. Parte delle logiche di calcolo e validazione è quindi delegata direttamente all'istanza SQL Server.");
+            }
+            if (hasObjectContext)
+            {
+                sb.AppendLine("Il framework ORM in uso adotta il pattern `ObjectContext` di Entity Framework 4.x/6.x classico, un indicatore storico di codice pre-EF Core.");
+            }
+        }
+
+        if (hasBatch)
+        {
+            var batchNames = string.Join(", ", solution.BatchWorkers.Select(b => $"`{b.WorkerName}`"));
+            sb.AppendLine();
+            sb.AppendLine($"A completare il quadro, le lavorazioni asincrone e i flussi notturni sono affidati a **{solution.TotalBatchWorkers} processi batch** ({batchNames}).");
+        }
+
+        sb.AppendLine();
+        sb.AppendLine($"In sintesi, il debito tecnico complessivo si attesta a **{debtScore}/100 ({debtRating})**. Se un nuovo team dovesse prendere in carico questo sistema domani mattina, il primo passo consigliato non è riscrivere tutto da zero, ma isolare i contratti di integrazione e preparare una transizione incrementale.");
+
+        return sb.ToString();
+    }
+
+    private static IReadOnlyList<NaturalLanguageQnA> BuildSolutionNaturalLanguageQnA(
+        SolutionDescriptor solution,
+        bool hasWcf,
+        bool hasWebApi,
+        bool hasObjectContext,
+        bool hasStoredProcs,
+        bool hasBatch)
+    {
+        var list = new List<NaturalLanguageQnA>
+        {
+            new(
+                Question: "Cosa fa in concreto questo sistema software?",
+                Answer: $"La soluzione '{solution.Name}' comprende {solution.TotalProjects} progetti strutturati per erogare logiche di business su larga scala. Raggruppa {solution.TotalServices} canali di servizio, gestisce la persistenza con {solution.TotalDatabases} contesti database e orchestra {solution.TotalBatchWorkers} job autonomi.",
+                Topic: "Architettura Generale"),
+            new(
+                Question: "Come dialogano i diversi componenti tra loro?",
+                Answer: hasWcf
+                    ? "La comunicazione interna ed esterna è prevalentemente sincrona via SOAP/WCF con contratti C# condivisi. Per le chiamate REST moderne sono presenti controller Web API dedicati."
+                    : "I componenti interagiscono tramite invocazioni dirette in memoria tra librerie di classe e tramite chiamate HTTP REST standard.",
+                Topic: "Integrazione & Protocolli"),
+            new(
+                Question: "Dove risiedono i dati e quali rischi ci sono sul database?",
+                Answer: hasStoredProcs
+                    ? $"I dati sono memorizzati su database relazionale SQL Server. Sono state rilevate {solution.Databases.Sum(d => d.DetectedStoredProceduresOrQueries.Count)} stored procedure cablate, che creano un forte accoppiamento con lo schema DB fisico."
+                    : "I dati risiedono su database relazionale gestito tramite ORM ad entità, consentendo una separazione più agevole tra codice C# e motore di archiviazione.",
+                Topic: "Persistenza & Dati"),
+            new(
+                Question: "Ci sono elaborazioni in background o processi schedulati?",
+                Answer: hasBatch
+                    ? $"Sì, sono presenti {solution.TotalBatchWorkers} processi batch autonomi (eseguibili console o worker di background) preposti all'elaborazione massiva, sincronizzazione notturna o calcolo differito."
+                    : "Non sono stati rilevati processi batch autonomi: il sistema opera prevalentemente 'on-demand' su richiesta dei client.",
+                Topic: "Batch & Asincrono"),
+            new(
+                Question: "Se dovessi modernizzarlo verso .NET 8 o 9, da dove comincerei?",
+                Answer: hasWcf
+                    ? "Il primo passo critico è disaccoppiare i contratti WCF, convertendoli in ASP.NET Core Minimal APIs o migrando temporaneamente a CoreWCF. Successivamente si migrano i DbContext a EF Core e si containerizzano i batch worker in Docker."
+                    : "La priorità consiste nell'aggiornare i progetti allo standard SDK-style di .NET 8, validando la compatibilità delle librerie NuGet e containerizzando i servizi su Linux.",
+                Topic: "Strategia di Modernizzazione")
+        };
+
+        return list;
+    }
+
+    private static string BuildAssemblyConversationalWalkthrough(
+        AssemblyDescriptor assembly,
+        bool isNetFramework,
+        int debtScore,
+        string debtRating)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"L'archeologia del modulo binario **{assembly.Name}** (versione {assembly.Version}) rivela un assembly .NET compilato per `{assembly.TargetFramework ?? "ECMA-335 standard"}`.");
+        sb.AppendLine();
+        sb.AppendLine($"All'interno del modulo risiedono **{assembly.TotalTypesCount} tipi strutturati** ({assembly.Types.Count(t => t.Kind == TypeKind.Class)} classi, {assembly.Types.Count(t => t.Kind == TypeKind.Interface)} interfacce), che definiscono l'ossatura logica del componente.");
+        sb.AppendLine();
+        if (isNetFramework)
+        {
+            sb.AppendLine("Il binario è ancorato al runtime .NET Framework proprietario di Windows. Questo significa che non può essere eseguito in modo nativo su sistemi operativi Linux, macOS o in container leggeri Alpine senza una ricompilazione mirata a .NET 8 o l'uso di runtime compatibili.");
+        }
+        else
+        {
+            sb.AppendLine("Il target di compilazione rispetta gli standard moderni di .NET Core / .NET 8+, garantendo piena portabilità e interoperabilità cross-platform.");
+        }
+        sb.AppendLine();
+        sb.AppendLine($"Il debito tecnico specifico del modulo è valutato in **{debtScore}/100 ({debtRating})**.");
+
+        return sb.ToString();
+    }
+
+    private static IReadOnlyList<NaturalLanguageQnA> BuildAssemblyNaturalLanguageQnA(
+        AssemblyDescriptor assembly,
+        bool isNetFramework)
+    {
+        return new List<NaturalLanguageQnA>
+        {
+            new(
+                Question: "Qual è lo scopo principale di questo assembly?",
+                Answer: $"L'assembly '{assembly.Name}' incapsula {assembly.TotalTypesCount} tipi compilati e opera come modulo autonomo della soluzione. Importa {assembly.References.Count} riferimenti esterni per svolgere le sue funzioni.",
+                Topic: "Ruolo nel Sistema"),
+            new(
+                Question: "Può essere eseguito in container Linux moderni?",
+                Answer: isNetFramework
+                    ? "No, poiché fa riferimento alle librerie mscorlib/.NET Framework classiche per Windows. È necessaria la migrazione del progetto a net8.0."
+                    : "Sì, il target framework è moderno e supporta pienamente l'esecuzione su container Linux e ambienti cloud serverless.",
+                Topic: "Portabilità & Cloud"),
+            new(
+                Question: "Quali sono le dipendenze esterne più importanti?",
+                Answer: $"Il modulo dichiara {assembly.References.Count} referenze, tra cui: {string.Join(", ", assembly.References.Take(6).Select(r => r.Name))}.",
+                Topic: "Dipendenze & Integrazione")
+        };
     }
 }

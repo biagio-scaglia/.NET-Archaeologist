@@ -31,6 +31,26 @@ export interface TypeInfo {
   attributes: string[]
 }
 
+export interface ManifestResourceDescriptor {
+  name: string
+  visibility: 'Public' | 'Private'
+  offset: number
+  resourceType: string | null
+}
+
+export interface ExtractedConstantString {
+  value: string
+  category: 'Sql' | 'Connection' | 'Url' | 'Path' | 'General'
+}
+
+export interface ModernizationFinding {
+  category: string
+  target: string
+  severity: 'Critical' | 'High' | 'Medium' | 'Info'
+  description: string
+  recommendation: string
+}
+
 export interface AssemblyDescriptor {
   name: string
   version: string | null
@@ -41,6 +61,9 @@ export interface AssemblyDescriptor {
   totalTypesCount: number
   references: AssemblyReference[]
   types: TypeInfo[]
+  manifestResources?: ManifestResourceDescriptor[]
+  userStrings?: ExtractedConstantString[]
+  modernizationFindings?: ModernizationFinding[]
 }
 
 export interface TreeTypeItem {

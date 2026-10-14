@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Threading;
 using System.Threading.Tasks;
@@ -244,6 +246,98 @@ public sealed class MetadataAssemblyInspector : IAssemblyInspector
                 Array.Empty<string>()));
         }
 
+        // Estrazione Risorse Incorporate (ManifestResources)
+        var manifestResources = new List<ManifestResourceDescriptor>();
+        foreach (var resHandle in metadataReader.ManifestResources)
+        {
+            var res = metadataReader.GetManifestResource(resHandle);
+            var resName = metadataReader.GetString(res.Name);
+            var visibility = (res.Attributes & ManifestResourceAttributes.VisibilityMask) == ManifestResourceAttributes.Public
+                ? "Public"
+                : "Private";
+
+            string resType = "Embedded";
+            if (resName.EndsWith(".resources", StringComparison.OrdinalIgnoreCase))
+                resType = "CompiledResources";
+            else if (resName.EndsWith(".xml", StringComparison.OrdinalIgnoreCase) || resName.EndsWith(".config", StringComparison.OrdinalIgnoreCase))
+                resType = "ConfigurationOrXml";
+            else if (resName.EndsWith(".sql", StringComparison.OrdinalIgnoreCase))
+                resType = "SqlScript";
+            else if (resName.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+                resType = "JsonDocument";
+
+            manifestResources.Add(new ManifestResourceDescriptor(resName, visibility, res.Offset, resType));
+        }
+
+        // Estrazione e classificazione euristica stringhe costanti dai corpi IL (ldstr opcode)
+        var extractedStrings = new List<ExtractedConstantString>();
+        var seenStrings = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var methodHandle in metadataReader.MethodDefinitions)
+        {
+            var methodDef = metadataReader.GetMethodDefinition(methodHandle);
+            if (methodDef.RelativeVirtualAddress == 0) continue;
+
+            try
+            {
+                var body = peReader.GetMethodBody(methodDef.RelativeVirtualAddress);
+                var il = body.GetILBytes();
+                if (il == null || il.Length < 5) continue;
+
+                for (int i = 0; i < il.Length - 4; i++)
+                {
+                    if (il[i] == 0x72) // OpCode ldstr
+                    {
+                        int token = BitConverter.ToInt32(il, i + 1);
+                        int row = token & 0x00FFFFFF;
+                        if ((token >> 24) == 0x70 && row > 0)
+                        {
+                            try
+                            {
+                                var handle = MetadataTokens.UserStringHandle(row);
+                                var str = metadataReader.GetUserString(handle);
+                                if (string.IsNullOrWhiteSpace(str) || str.Length < 3) continue;
+
+                                if (str.Length > 2000)
+                                {
+                                    str = str.Substring(0, 2000) + "... [troncata]";
+                                }
+
+                                if (seenStrings.Add(str))
+                                {
+                                    var category = ClassifyConstantString(str);
+                                    extractedStrings.Add(new ExtractedConstantString(str, category));
+                                }
+                            }
+                            catch
+                            {
+                                // Token non valido nell'heap #US, prosegui
+                            }
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Fallback in caso di metodo non decodificabile
+            }
+        }
+
+        extractedStrings = extractedStrings
+            .OrderBy(s => s.Category switch
+            {
+                "Sql" => 1,
+                "Connection" => 2,
+                "Url" => 3,
+                "Path" => 4,
+                _ => 5
+            })
+            .ThenBy(s => s.Value)
+            .ToList();
+
+        // Audit dei rischi e tecnologie per modernizzazione a .NET 8/9
+        var modernizationFindings = AnalyzeModernizationRisks(references, targetFramework);
+
         var descriptor = new AssemblyDescriptor(
             assemblyName,
             version,
@@ -252,7 +346,10 @@ public sealed class MetadataAssemblyInspector : IAssemblyInspector
             targetFramework,
             mvid,
             references,
-            types);
+            types,
+            manifestResources,
+            extractedStrings,
+            modernizationFindings);
 
         return Task.FromResult(descriptor);
     }
@@ -414,5 +511,128 @@ public sealed class MetadataAssemblyInspector : IAssemblyInspector
             default:
                 return null;
         }
+    }
+
+    private static string ClassifyConstantString(string s)
+    {
+        var trimmed = s.Trim();
+        var upper = trimmed.ToUpperInvariant();
+
+        if (upper.StartsWith("SELECT ") || upper.StartsWith("INSERT INTO ") ||
+            upper.StartsWith("UPDATE ") || upper.StartsWith("DELETE FROM ") ||
+            upper.StartsWith("EXEC ") || upper.StartsWith("CREATE TABLE ") ||
+            upper.StartsWith("ALTER TABLE ") || (upper.Contains(" FROM ") && upper.Contains(" WHERE ")))
+        {
+            return "Sql";
+        }
+
+        if (upper.Contains("DATA SOURCE=") || upper.Contains("INITIAL CATALOG=") ||
+            upper.Contains("SERVER=") || upper.Contains("INTEGRATED SECURITY=") ||
+            upper.Contains("USER ID=") || upper.Contains("PASSWORD="))
+        {
+            return "Connection";
+        }
+
+        if (trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.StartsWith("ftp://", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.StartsWith("ws://", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.StartsWith("wss://", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.StartsWith("net.tcp://", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Url";
+        }
+
+        if ((trimmed.Length > 3 && trimmed[1] == ':' && (trimmed[2] == '\\' || trimmed[2] == '/')) ||
+            trimmed.StartsWith("\\\\"))
+        {
+            return "Path";
+        }
+
+        return "General";
+    }
+
+    private static List<ModernizationFinding> AnalyzeModernizationRisks(
+        IReadOnlyList<AssemblyReferenceDescriptor> references,
+        string? targetFramework)
+    {
+        var findings = new List<ModernizationFinding>();
+
+        foreach (var r in references)
+        {
+            var name = r.Name;
+
+            if (name.Equals("System.Web", StringComparison.OrdinalIgnoreCase) ||
+                name.StartsWith("System.Web.", StringComparison.OrdinalIgnoreCase))
+            {
+                findings.Add(new ModernizationFinding(
+                    "LegacyTechnology",
+                    name,
+                    "Critical",
+                    "Dipendenza diretta da ASP.NET Legacy (System.Web). Non supportato su .NET Core o .NET 8.",
+                    "Riscrivere HttpHandler/HttpModule con middleware ASP.NET Core o Controller/Minimal API."));
+            }
+            else if (name.Equals("System.EnterpriseServices", StringComparison.OrdinalIgnoreCase))
+            {
+                findings.Add(new ModernizationFinding(
+                    "LegacyTechnology",
+                    name,
+                    "Critical",
+                    "Componenti transazionali COM+ / ServicedComponent. Rimosso da .NET moderno.",
+                    "Sostituire le transazioni COM+ con transazioni di database locali o pattern Saga/Outbox."));
+            }
+            else if (name.Equals("System.Runtime.Remoting", StringComparison.OrdinalIgnoreCase))
+            {
+                findings.Add(new ModernizationFinding(
+                    "LegacyTechnology",
+                    name,
+                    "Critical",
+                    ".NET Remoting e canali TCP/HTTP binari. Rimosso nelle moderne versioni di .NET.",
+                    "Migrare le comunicazioni remote a gRPC o REST API con JSON/Protobuf."));
+            }
+            else if (name.Equals("System.ServiceModel", StringComparison.OrdinalIgnoreCase) ||
+                     name.StartsWith("System.ServiceModel.", StringComparison.OrdinalIgnoreCase))
+            {
+                findings.Add(new ModernizationFinding(
+                    "LegacyTechnology",
+                    name,
+                    "High",
+                    "Hosting di servizi WCF (Windows Communication Foundation). Solo il client è supportato su .NET 8.",
+                    "Per il server side, utilizzare CoreWCF oppure migrare i contratti a Web API REST o gRPC."));
+            }
+            else if (name.Equals("System.Data.OracleClient", StringComparison.OrdinalIgnoreCase))
+            {
+                findings.Add(new ModernizationFinding(
+                    "DeprecatedApi",
+                    name,
+                    "High",
+                    "Driver ADO.NET Oracle ufficiale deprecato da Microsoft fin da .NET Framework 4.",
+                    "Sostituire con il driver moderno Oracle.ManagedDataAccess.Core."));
+            }
+            else if (name.Equals("System.Workflow.Runtime", StringComparison.OrdinalIgnoreCase) ||
+                     name.StartsWith("System.Workflow.", StringComparison.OrdinalIgnoreCase))
+            {
+                findings.Add(new ModernizationFinding(
+                    "RemovedTechnology",
+                    name,
+                    "Critical",
+                    "Windows Workflow Foundation 3.x (WF3) non supportato in ambienti .NET moderni.",
+                    "Riprogettare i workflow con Elsa Workflows, Temporal o motori BPMN moderni."));
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(targetFramework) &&
+            (targetFramework.Contains(".NETFramework", StringComparison.OrdinalIgnoreCase) ||
+             targetFramework.Contains("v2.") || targetFramework.Contains("v3.") || targetFramework.Contains("v4.")))
+        {
+            findings.Add(new ModernizationFinding(
+                "RuntimePorting",
+                targetFramework,
+                "Medium",
+                $"L'assembly è compilato per '{targetFramework}'. È soggetto a vincoli di runtime Windows-only.",
+                "Pianificare il porting a .NET 8 LTS per ottenere cross-platform nativo (Linux/Container) e migliori prestazioni di runtime."));
+        }
+
+        return findings;
     }
 }

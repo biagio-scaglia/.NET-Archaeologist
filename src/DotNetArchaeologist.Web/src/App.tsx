@@ -12,6 +12,7 @@ import { TechnicalDiagram } from './components/TechnicalDiagram'
 import { SystemSitemap360 } from './components/SystemSitemap360'
 import { ExecutiveReportView } from './components/ExecutiveReportView'
 import { GlobalSearchDialog } from './components/GlobalSearchDialog'
+import { AssemblyInsightsDialog } from './components/AssemblyInsightsDialog'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import type { AssemblyDescriptor, TreeNamespaceGroup, TypeInfo, SolutionDescriptor, ExecutiveReport } from './types/api'
 
@@ -31,11 +32,12 @@ export const App: React.FC = () => {
   const [decompileLoading, setDecompileLoading] = useState<boolean>(false)
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false)
+  const [isInsightsOpen, setIsInsightsOpen] = useState<boolean>(false)
   const [isAboutOpen, setIsAboutOpen] = useState<boolean>(false)
   const [statusMessage, setStatusMessage] = useState<string>('Pronto')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  // Scorciatoia globale per Trova/Cerca (Ctrl+K o F3)
+  // Scorciatoia globale per Trova/Cerca (Ctrl+K o F3) e Stringhe/Modernizzazione (F4)
   React.useEffect(() => {
     const handleGlobalKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
@@ -44,6 +46,9 @@ export const App: React.FC = () => {
       } else if (e.key === 'F3') {
         e.preventDefault()
         setIsSearchOpen(true)
+      } else if (e.key === 'F4') {
+        e.preventDefault()
+        setIsInsightsOpen(prev => !prev)
       }
     }
     window.addEventListener('keydown', handleGlobalKey)
@@ -352,6 +357,7 @@ export const App: React.FC = () => {
           onResetClick={handleReset}
           onAboutClick={() => setIsAboutOpen(true)}
           onSearchClick={() => setIsSearchOpen(true)}
+          onInsightsClick={assembly ? () => setIsInsightsOpen(true) : undefined}
         />
 
         {(solution || assembly) && (
@@ -385,14 +391,24 @@ export const App: React.FC = () => {
               [Disegno Tecnico Architetturale (Blueprint)]
             </button>
             {assembly && (
-              <button
-                type="button"
-                className={viewMode === 'assembly' ? 'active-view-tab' : ''}
-                style={{ cursor: 'pointer' }}
-                onClick={() => setViewMode('assembly')}
-              >
-                [Codice Decompilato ({assembly.name})]
-              </button>
+              <>
+                <button
+                  type="button"
+                  className={viewMode === 'assembly' ? 'active-view-tab' : ''}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => setViewMode('assembly')}
+                >
+                  [Codice Decompilato ({assembly.name})]
+                </button>
+                <button
+                  type="button"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => setIsInsightsOpen(true)}
+                  title="Ispezione avanzata di stringhe costanti (SQL, URL, Connection), risorse e rischi modernizzazione (Scorciatoia: F4)"
+                >
+                  [Stringhe &amp; Modernizzazione (F4)]
+                </button>
+              </>
             )}
             <button
               type="button"
@@ -546,6 +562,13 @@ export const App: React.FC = () => {
         onOpenAssemblyPath={(path) => handleInspectPath(path)}
         onOpenSitemap={() => setViewMode('sitemap360')}
         onOpenSolution={() => setViewMode('solution')}
+        onOpenInsights={() => setIsInsightsOpen(true)}
+      />
+
+      <AssemblyInsightsDialog
+        isOpen={isInsightsOpen}
+        onClose={() => setIsInsightsOpen(false)}
+        assembly={assembly}
       />
     </div>
   )

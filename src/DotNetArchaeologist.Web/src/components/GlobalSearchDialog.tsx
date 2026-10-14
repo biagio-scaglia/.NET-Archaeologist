@@ -25,6 +25,7 @@ interface GlobalSearchDialogProps {
   onOpenAssemblyPath: (assemblyPath: string) => void
   onOpenSitemap: () => void
   onOpenSolution: () => void
+  onOpenInsights?: () => void
 }
 
 export const GlobalSearchDialog: React.FC<GlobalSearchDialogProps> = ({
@@ -36,7 +37,8 @@ export const GlobalSearchDialog: React.FC<GlobalSearchDialogProps> = ({
   onSelectType,
   onOpenAssemblyPath,
   onOpenSitemap,
-  onOpenSolution
+  onOpenSolution,
+  onOpenInsights
 }) => {
   const [query, setQuery] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -215,10 +217,63 @@ export const GlobalSearchDialog: React.FC<GlobalSearchDialogProps> = ({
           }
         })
       })
+
+      // Risorse incorporate
+      assembly.manifestResources?.forEach(res => {
+        items.push({
+          id: `res-${res.name}`,
+          title: res.name,
+          subtitle: `Risorsa incorporata (${res.resourceType || 'Embedded'}, ${res.visibility}) - Offset: ${res.offset}`,
+          category: 'Type',
+          badgeText: 'RISORSA',
+          badgeClass: 'badge-struct',
+          action: () => {
+            onOpenInsights?.()
+            onClose()
+          }
+        })
+      })
+
+      // Costanti letterali estratte (SQL, URL, Connection strings, Percorsi)
+      assembly.userStrings?.forEach((str, i) => {
+        if (str.category !== 'General') {
+          items.push({
+            id: `str-${i}-${str.category}`,
+            title: str.value,
+            subtitle: `Stringa costante [${str.category.toUpperCase()}] estratta dai corpi IL`,
+            category: str.category === 'Sql' ? 'Database' : 'Endpoint',
+            badgeText: str.category.toUpperCase(),
+            badgeClass: str.category === 'Sql' ? 'badge-enum' : 'badge-class',
+            action: () => {
+              if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                navigator.clipboard.writeText(str.value)
+              }
+              onOpenInsights?.()
+              onClose()
+            }
+          })
+        }
+      })
+
+      // Rilievi di modernizzazione
+      assembly.modernizationFindings?.forEach((f, i) => {
+        items.push({
+          id: `mod-${i}-${f.target}`,
+          title: `Audit: ${f.target} (${f.severity})`,
+          subtitle: `${f.description} -> Raccomandazione: ${f.recommendation}`,
+          category: 'Project',
+          badgeText: `AUDIT ${f.severity.toUpperCase()}`,
+          badgeClass: 'badge-interface',
+          action: () => {
+            onOpenInsights?.()
+            onClose()
+          }
+        })
+      })
     }
 
     return items
-  }, [namespaces, solution, assembly, onSelectType, onOpenAssemblyPath, onOpenSitemap, onOpenSolution, onClose])
+  }, [namespaces, solution, assembly, onSelectType, onOpenAssemblyPath, onOpenSitemap, onOpenSolution, onOpenInsights, onClose])
 
   // Filtraggio rapido
   const filteredResults = useMemo(() => {

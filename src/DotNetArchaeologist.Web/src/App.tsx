@@ -402,6 +402,16 @@ export const App: React.FC = () => {
             >
               [Report Esecutivo &amp; PDF]
             </button>
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setIsSearchOpen(true)}
+                title="Ricerca universale per classi, API, tabelle, entità e worker batch (Scorciatoia: Ctrl+K o F3)"
+                style={{ cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                Cerca Tutto (Ctrl+K)
+              </button>
+            </div>
           </div>
         )}
 

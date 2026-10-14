@@ -14,6 +14,14 @@ import { ExecutiveReportView } from './components/ExecutiveReportView'
 import { GlobalSearchDialog } from './components/GlobalSearchDialog'
 import { AssemblyInsightsDialog } from './components/AssemblyInsightsDialog'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import {
+  SitemapIcon,
+  BlueprintIcon,
+  AssemblyIcon,
+  AuditIcon,
+  ReportIcon,
+  SearchIcon
+} from './components/icons/RetroIcons'
 import type { AssemblyDescriptor, TreeNamespaceGroup, TypeInfo, SolutionDescriptor, ExecutiveReport } from './types/api'
 
 export const App: React.FC = () => {
@@ -361,71 +369,71 @@ export const App: React.FC = () => {
         />
 
         {(solution || assembly) && (
-          <div className="view-bar">
+          <div className="view-bar" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
             {solution && (
               <>
                 <button
                   type="button"
                   className={viewMode === 'solution' ? 'active-view-tab' : ''}
-                  style={{ cursor: 'pointer' }}
+                  style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                   onClick={() => setViewMode('solution')}
                 >
-                  [Mappa Sistema: {solution.name}]
+                  <SitemapIcon size={14} /> Mappa Sistema: {solution.name}
                 </button>
                 <button
                   type="button"
                   className={viewMode === 'sitemap360' ? 'active-view-tab' : ''}
-                  style={{ cursor: 'pointer' }}
+                  style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                   onClick={() => setViewMode('sitemap360')}
                 >
-                  [Sitemap &amp; Flussi 360°]
+                  <SitemapIcon size={14} /> Sitemap &amp; Flussi 360°
                 </button>
               </>
             )}
             <button
               type="button"
               className={viewMode === 'diagram' ? 'active-view-tab' : ''}
-              style={{ cursor: 'pointer' }}
+              style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
               onClick={() => setViewMode('diagram')}
             >
-              [Disegno Tecnico Architetturale (Blueprint)]
+              <BlueprintIcon size={14} /> Disegno Tecnico (Blueprint)
             </button>
             {assembly && (
               <>
                 <button
                   type="button"
                   className={viewMode === 'assembly' ? 'active-view-tab' : ''}
-                  style={{ cursor: 'pointer' }}
+                  style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                   onClick={() => setViewMode('assembly')}
                 >
-                  [Codice Decompilato ({assembly.name})]
+                  <AssemblyIcon size={14} /> Codice Decompilato ({assembly.name})
                 </button>
                 <button
                   type="button"
-                  style={{ cursor: 'pointer' }}
+                  style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                   onClick={() => setIsInsightsOpen(true)}
                   title="Ispezione avanzata di stringhe costanti (SQL, URL, Connection), risorse e rischi modernizzazione (Scorciatoia: F4)"
                 >
-                  [Stringhe &amp; Modernizzazione (F4)]
+                  <AuditIcon size={14} /> Stringhe &amp; Modernizzazione (F4)
                 </button>
               </>
             )}
             <button
               type="button"
               className={viewMode === 'report' ? 'active-view-tab' : ''}
-              style={{ cursor: 'pointer' }}
+              style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
               onClick={handleGenerateReport}
             >
-              [Report Esecutivo &amp; PDF]
+              <ReportIcon size={14} /> Report Esecutivo &amp; PDF
             </button>
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
               <button
                 type="button"
                 onClick={() => setIsSearchOpen(true)}
                 title="Ricerca universale per classi, API, tabelle, entità e worker batch (Scorciatoia: Ctrl+K o F3)"
-                style={{ cursor: 'pointer', fontWeight: 'bold' }}
+                style={{ cursor: 'pointer', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: 4 }}
               >
-                Cerca Tutto (Ctrl+K)
+                <SearchIcon size={14} /> Cerca Tutto (Ctrl+K)
               </button>
             </div>
           </div>

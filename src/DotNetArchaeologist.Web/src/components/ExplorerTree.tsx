@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useDeferredValue } from 'react'
 import type { TreeNamespaceGroup, TreeTypeItem } from '../types/api'
+import { NamespaceIcon, ClassIcon, InterfaceIcon, StructIcon } from './icons/RetroIcons'
 
 interface ExplorerTreeProps {
   namespaces: TreeNamespaceGroup[]
@@ -205,11 +206,15 @@ export const ExplorerTree: React.FC<ExplorerTreeProps> = ({
             flex: 1,
             padding: '1px 2px',
             fontSize: '10px',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 2
           }}
           title="Filtra solo classi e record"
         >
-          [C] Classi ({stats.classes})
+          <ClassIcon size={12} /> Classi ({stats.classes})
         </button>
         <button
           type="button"
@@ -219,11 +224,15 @@ export const ExplorerTree: React.FC<ExplorerTreeProps> = ({
             flex: 1,
             padding: '1px 2px',
             fontSize: '10px',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 2
           }}
           title="Filtra solo interfacce"
         >
-          [I] Interfacce ({stats.interfaces})
+          <InterfaceIcon size={12} /> Interfacce ({stats.interfaces})
         </button>
         <button
           type="button"
@@ -233,11 +242,15 @@ export const ExplorerTree: React.FC<ExplorerTreeProps> = ({
             flex: 1,
             padding: '1px 2px',
             fontSize: '10px',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 2
           }}
           title="Filtra enum, struct e delegati"
         >
-          [E/S] Altro ({stats.others})
+          <StructIcon size={12} /> Altro ({stats.others})
         </button>
       </div>
 
@@ -260,11 +273,12 @@ export const ExplorerTree: React.FC<ExplorerTreeProps> = ({
                   <div
                     className="tree-node"
                     onClick={() => toggleNamespace(nsGroup.namespace)}
-                    style={{ fontWeight: 'bold' }}
+                    style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center' }}
                   >
                     <span style={{ fontFamily: 'monospace', marginRight: 4 }}>
                       {isExpanded ? '[-]' : '[+]'}
                     </span>
+                    <NamespaceIcon size={13} style={{ marginRight: 4 }} />
                     <span>{nsGroup.namespace} ({nsGroup.types.length})</span>
                   </div>
 
@@ -272,6 +286,9 @@ export const ExplorerTree: React.FC<ExplorerTreeProps> = ({
                     <ul style={{ margin: '2px 0 2px 14px', padding: 0 }}>
                       {visibleTypes.map((typeItem: TreeTypeItem) => {
                         const isSelected = selectedTypeFullName === typeItem.fullName
+                        const k = typeItem.kind.toLowerCase()
+                        const isIface = k === 'interface'
+                        const isClass = k === 'class' || k === 'record'
                         return (
                           <li
                             key={typeItem.fullName}
@@ -281,7 +298,15 @@ export const ExplorerTree: React.FC<ExplorerTreeProps> = ({
                               className={`tree-node ${isSelected ? 'selected' : ''}`}
                               onClick={() => onSelectType(typeItem.fullName)}
                               title={typeItem.fullName}
+                              style={{ display: 'flex', alignItems: 'center', gap: 4 }}
                             >
+                              {isIface ? (
+                                <InterfaceIcon size={13} />
+                              ) : isClass ? (
+                                <ClassIcon size={13} />
+                              ) : (
+                                <StructIcon size={13} />
+                              )}
                               <span className={`badge-kind ${getKindBadgeClass(typeItem.kind)}`}>
                                 {getKindAbbreviation(typeItem.kind)}
                               </span>

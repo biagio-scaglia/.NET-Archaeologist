@@ -1,5 +1,6 @@
 import React from 'react'
 import type { TypeInfo } from '../types/api'
+import { MethodIcon, PropertyIcon, EventIcon, ClassIcon, InterfaceIcon } from './icons/RetroIcons'
 
 interface MetadataInspectorProps {
   typeInfo: TypeInfo | null
@@ -97,7 +98,8 @@ export const MetadataInspector: React.FC<MetadataInspectorProps> = ({
           </legend>
           <ul style={{ margin: 0, paddingLeft: 16 }}>
             {derivedTypes.map(child => (
-              <li key={child} style={{ wordBreak: 'break-all', marginBottom: 2 }}>
+              <li key={child} style={{ wordBreak: 'break-all', marginBottom: 2, display: 'flex', alignItems: 'center' }}>
+                <ClassIcon size={12} style={{ marginRight: 4 }} />
                 {onSelectType ? (
                   <button
                     type="button"
@@ -129,7 +131,10 @@ export const MetadataInspector: React.FC<MetadataInspectorProps> = ({
           <legend>Interfacce Implementate ({typeInfo.implementedInterfaces.length})</legend>
           <ul style={{ margin: 0, paddingLeft: 16 }}>
             {typeInfo.implementedInterfaces.map(iface => (
-              <li key={iface} style={{ wordBreak: 'break-all' }}>{iface}</li>
+              <li key={iface} style={{ wordBreak: 'break-all', display: 'flex', alignItems: 'center' }}>
+                <InterfaceIcon size={12} style={{ marginRight: 4 }} />
+                <span>{iface}</span>
+              </li>
             ))}
           </ul>
         </fieldset>
@@ -153,7 +158,18 @@ export const MetadataInspector: React.FC<MetadataInspectorProps> = ({
               <tbody>
                 {typeInfo.members.map((m, idx) => (
                   <tr key={`${m.name}-${idx}`} style={{ borderBottom: '1px solid #e0e0e0' }}>
-                    <td>[{m.kind}]</td>
+                    <td style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                      {m.kind === 'Method' || m.kind === 'Constructor' ? (
+                        <MethodIcon size={12} />
+                      ) : m.kind === 'Property' ? (
+                        <PropertyIcon size={12} />
+                      ) : m.kind === 'Event' ? (
+                        <EventIcon size={12} />
+                      ) : (
+                        <ClassIcon size={12} />
+                      )}
+                      <span>[{m.kind}]</span>
+                    </td>
                     <td style={{ fontWeight: m.kind === 'Constructor' ? 'bold' : 'normal' }}>{m.name}</td>
                     <td>{m.accessibility}</td>
                     <td>{m.isStatic ? 'Static' : m.isVirtual ? 'Virtual' : '-'}</td>

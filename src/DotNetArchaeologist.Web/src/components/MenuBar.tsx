@@ -1,5 +1,6 @@
 import React from 'react'
 import { useRetroTheme } from '../theme/ThemeContext'
+import { SearchIcon, StringConstantIcon, AssemblyIcon } from './icons/RetroIcons'
 
 interface MenuBarProps {
   onOpenClick: () => void
@@ -20,17 +21,20 @@ export const MenuBar: React.FC<MenuBarProps> = ({
 
   return (
     <div className="menu-bar" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-      <div className="menu-item" onClick={onOpenClick}>
-        <u>F</u>ile - Apri Assembly...
+      <div className="menu-item" onClick={onOpenClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        <AssemblyIcon size={13} />
+        <span><u>F</u>ile - Apri Assembly...</span>
       </div>
       {onSearchClick && (
-        <div className="menu-item" onClick={onSearchClick} title="Trova in classi, API, tabelle e processi (Ctrl+K)">
-          <u>C</u>erca Globale... (Ctrl+K)
+        <div className="menu-item" onClick={onSearchClick} title="Trova in classi, API, tabelle e processi (Ctrl+K)" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <SearchIcon size={13} />
+          <span><u>C</u>erca Globale... (Ctrl+K)</span>
         </div>
       )}
       {onInsightsClick && (
-        <div className="menu-item" onClick={onInsightsClick} title="Ispezione stringhe costanti, risorse incorporate e audit modernizzazione (F4)">
-          <u>S</u>tringhe &amp; Modernizzazione (F4)
+        <div className="menu-item" onClick={onInsightsClick} title="Ispezione stringhe costanti, risorse incorporate e audit modernizzazione (F4)" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <StringConstantIcon size={13} />
+          <span><u>S</u>tringhe &amp; Modernizzazione (F4)</span>
         </div>
       )}
       <div className="menu-item" onClick={onResetClick}>

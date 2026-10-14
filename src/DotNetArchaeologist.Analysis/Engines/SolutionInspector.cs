@@ -42,40 +42,64 @@ public sealed class SolutionInspector : ISolutionInspector
         var slnContent = await File.ReadAllTextAsync(solutionPath, cancellationToken).ConfigureAwait(false);
         var projectEntries = ParseSolutionProjects(slnContent, solutionDir);
 
-        var projects = new List<SolutionProjectDescriptor>();
+        var indexedEntries = projectEntries.Select((entry, index) => (entry, index)).ToList();
+        var analysisResults = new System.Collections.Concurrent.ConcurrentBag<ProjectAnalysisResult>();
+
+        await Parallel.ForEachAsync(
+            indexedEntries,
+            new ParallelOptions
+            {
+                MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount),
+                CancellationToken = cancellationToken
+            },
+            async (item, ct) =>
+            {
+                var (entry, index) = item;
+                var projDesc = await AnalyzeProjectAsync(entry, ct).ConfigureAwait(false);
+                var pServices = new List<DiscoveredServiceDescriptor>();
+                var pDatabases = new List<DiscoveredDatabaseDescriptor>();
+                var pBatchWorkers = new List<DiscoveredBatchWorkerDescriptor>();
+                var pDomainComponents = new List<DiscoveredDomainComponentDescriptor>();
+
+                // Se l'assembly compilato esiste, procediamo con l'analisi profonda a zero-execution
+                if (projDesc.AssemblyExists && !string.IsNullOrEmpty(projDesc.OutputAssemblyPath))
+                {
+                    try
+                    {
+                        var asmDesc = await _assemblyInspector.InspectFileAsync(
+                            projDesc.OutputAssemblyPath,
+                            ct).ConfigureAwait(false);
+
+                        ExtractArchitecturalRoles(projDesc, asmDesc, pServices, pDatabases, pBatchWorkers, pDomainComponents);
+                    }
+                    catch
+                    {
+                        // Fallback silenzioso su euristica del progetto se l'assembly è parziale o corrotto
+                        FallbackArchitecturalRoles(projDesc, pServices, pDatabases, pBatchWorkers, pDomainComponents);
+                    }
+                }
+                else
+                {
+                    FallbackArchitecturalRoles(projDesc, pServices, pDatabases, pBatchWorkers, pDomainComponents);
+                }
+
+                analysisResults.Add(new ProjectAnalysisResult(index, projDesc, pServices, pDatabases, pBatchWorkers, pDomainComponents));
+            }).ConfigureAwait(false);
+
+        var sortedResults = analysisResults.OrderBy(r => r.OriginalIndex).ToList();
+        var projects = new List<SolutionProjectDescriptor>(sortedResults.Count);
         var services = new List<DiscoveredServiceDescriptor>();
         var databases = new List<DiscoveredDatabaseDescriptor>();
         var batchWorkers = new List<DiscoveredBatchWorkerDescriptor>();
         var domainComponents = new List<DiscoveredDomainComponentDescriptor>();
 
-        foreach (var entry in projectEntries)
+        foreach (var res in sortedResults)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var projDesc = await AnalyzeProjectAsync(entry, cancellationToken).ConfigureAwait(false);
-            projects.Add(projDesc);
-
-            // Se l'assembly compilato esiste, procediamo con l'analisi profonda a zero-execution
-            if (projDesc.AssemblyExists && !string.IsNullOrEmpty(projDesc.OutputAssemblyPath))
-            {
-                try
-                {
-                    var asmDesc = await _assemblyInspector.InspectFileAsync(
-                        projDesc.OutputAssemblyPath,
-                        cancellationToken).ConfigureAwait(false);
-
-                    ExtractArchitecturalRoles(projDesc, asmDesc, services, databases, batchWorkers, domainComponents);
-                }
-                catch
-                {
-                    // Fallback silenzioso su euristica del progetto se l'assembly è parziale o corrotto
-                    FallbackArchitecturalRoles(projDesc, services, databases, batchWorkers, domainComponents);
-                }
-            }
-            else
-            {
-                FallbackArchitecturalRoles(projDesc, services, databases, batchWorkers, domainComponents);
-            }
+            projects.Add(res.Project);
+            services.AddRange(res.Services);
+            databases.AddRange(res.Databases);
+            batchWorkers.AddRange(res.BatchWorkers);
+            domainComponents.AddRange(res.DomainComponents);
         }
 
         return new SolutionDescriptor(
@@ -128,6 +152,14 @@ public sealed class SolutionInspector : ISolutionInspector
     }
 
     private sealed record ProjectEntry(string Name, string RelativePath, string FullPath);
+
+    private sealed record ProjectAnalysisResult(
+        int OriginalIndex,
+        SolutionProjectDescriptor Project,
+        List<DiscoveredServiceDescriptor> Services,
+        List<DiscoveredDatabaseDescriptor> Databases,
+        List<DiscoveredBatchWorkerDescriptor> BatchWorkers,
+        List<DiscoveredDomainComponentDescriptor> DomainComponents);
 
     private static List<ProjectEntry> ParseSolutionProjects(string slnContent, string solutionDir)
     {

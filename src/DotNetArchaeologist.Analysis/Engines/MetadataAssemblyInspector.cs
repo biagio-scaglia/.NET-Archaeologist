@@ -380,14 +380,15 @@ public sealed class MetadataAssemblyInspector : IAssemblyInspector
                 var il = body.GetILBytes();
                 if (il == null || il.Length < 5) continue;
 
-                for (int i = 0; i < il.Length - 4; i++)
+                for (int i = 0; i <= il.Length - 5; i++)
                 {
                     if (il[i] == 0x72) // OpCode ldstr
                     {
-                        int token = BitConverter.ToInt32(il, i + 1);
+                        int token = System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(il.AsSpan(i + 1));
                         int row = token & 0x00FFFFFF;
                         if ((token >> 24) == 0x70 && row > 0)
                         {
+                            i += 4; // Salta l'operando da 4 byte
                             try
                             {
                                 var handle = MetadataTokens.UserStringHandle(row);

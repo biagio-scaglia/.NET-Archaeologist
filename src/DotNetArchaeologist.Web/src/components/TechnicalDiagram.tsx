@@ -77,12 +77,14 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
   // Caricamento del grafo architetturale remoto se sessionId è disponibile
   useEffect(() => {
     if (!sessionId) {
-      setBackendGraph(null)
-      return
+      const timer = setTimeout(() => setBackendGraph(null), 0)
+      return () => clearTimeout(timer)
     }
 
     let isMounted = true
-    setGraphLoading(true)
+    const timer = setTimeout(() => {
+      if (isMounted) setGraphLoading(true)
+    }, 0)
 
     fetch(`/api/assemblies/${sessionId}/graph?includeReferences=true&includeExternal=${showExternal}`)
       .then(res => res.ok ? res.json() : null)
@@ -98,6 +100,7 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
 
     return () => {
       isMounted = false
+      clearTimeout(timer)
     }
   }, [sessionId, showExternal])
 
@@ -525,15 +528,15 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
     return { nodes: nList, edges: eList }
   }, [solution, assembly, diagramView, backendGraph])
 
-  // Sincronizzazione con selectedTypeFullName
-  useEffect(() => {
+  // ID effettivo del nodo selezionato (derivato da selezione utente o prop selectedTypeFullName)
+  const effectiveSelectedNodeId = useMemo(() => {
+    if (selectedNodeId) return selectedNodeId
     if (selectedTypeFullName && nodes.length > 0) {
       const match = nodes.find(n => n.typeFullName === selectedTypeFullName || n.title === selectedTypeFullName)
-      if (match) {
-        setSelectedNodeId(match.id)
-      }
+      if (match) return match.id
     }
-  }, [selectedTypeFullName, nodes])
+    return null
+  }, [selectedNodeId, selectedTypeFullName, nodes])
 
   // Conteggi reali dinamici per i layer del filtro
   const layerCounts = useMemo(() => {
@@ -576,8 +579,8 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
   }, [filteredNodes, searchQuery])
 
   const selectedNode = useMemo(
-    () => nodes.find(n => n.id === selectedNodeId) ?? null,
-    [nodes, selectedNodeId]
+    () => nodes.find(n => n.id === effectiveSelectedNodeId) ?? null,
+    [nodes, effectiveSelectedNodeId]
   )
 
   // Calcolo dinamico dell'area canvas in base alla posizione reale di TUTTI i nodi
@@ -887,19 +890,19 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
 
                   const isInherit = e.style === 'inheritance'
                   const isImplements = e.style === 'implements'
-                  const isConnectedToSelected = selectedNodeId === e.fromId || selectedNodeId === e.toId
+                  const isConnectedToSelected = effectiveSelectedNodeId === e.fromId || effectiveSelectedNodeId === e.toId
                   const isHighlight = isConnectedToSelected
 
                   // In modalità Focus mostra gli archi solo quando un nodo è selezionato
                   if (edgeMode === 'focus') {
-                    if (!selectedNodeId || !isConnectedToSelected) {
+                    if (!effectiveSelectedNodeId || !isConnectedToSelected) {
                       return null
                     }
                   }
 
                   const opacity = isHighlight
                     ? 1
-                    : (selectedNodeId ? 0.05 : (edgeMode === 'all' ? 0.7 : 0.22))
+                    : (effectiveSelectedNodeId ? 0.05 : (edgeMode === 'all' ? 0.7 : 0.22))
                   const strokeWidth = isHighlight ? 2.5 : 1.2
                   const strokeColor = isHighlight
                     ? '#0000ff'
@@ -955,7 +958,7 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
 
             {/* Render dei Blocchi Nodi del Disegno Tecnico */}
             {filteredNodes.map(node => {
-              const isSelected = selectedNodeId === node.id
+              const isSelected = effectiveSelectedNodeId === node.id
               const isMatched = searchQuery.trim() !== '' && (
                 node.title.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
                 (node.subtitle && node.subtitle.toLowerCase().includes(searchQuery.toLowerCase().trim()))
@@ -1128,7 +1131,7 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
             <div style={{ padding: '4px', backgroundColor: '#e6eaee', position: 'relative', height: '90px' }}>
               <svg width="100%" height="100%" viewBox={`0 0 ${canvasBounds.width} ${canvasBounds.height}`}>
                 {filteredNodes.map(n => {
-                  const isSel = n.id === selectedNodeId
+                  const isSel = n.id === effectiveSelectedNodeId
                   return (
                     <rect
                       key={`mini-${n.id}`}

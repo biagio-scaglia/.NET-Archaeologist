@@ -54,23 +54,14 @@ export const OpenDialog: React.FC<OpenDialogProps> = ({
   const [localPath, setLocalPath] = useState<string>('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
-  const [recentSolutions, setRecentSolutions] = useState<string[]>([])
-  const [recentFolders, setRecentFolders] = useState<string[]>([])
-  const [recentAssemblies, setRecentAssemblies] = useState<string[]>([])
+  const [recentSolutions, setRecentSolutions] = useState<string[]>(() => getRecentPaths('dna_recent_solutions'))
+  const [recentFolders, setRecentFolders] = useState<string[]>(() => getRecentPaths('dna_recent_folders'))
+  const [recentAssemblies, setRecentAssemblies] = useState<string[]>(() => getRecentPaths('dna_recent_assemblies'))
 
   const [scanningFolder, setScanningFolder] = useState<boolean>(false)
   const [discoveredAssemblies, setDiscoveredAssemblies] = useState<DiscoveredAssemblyItem[]>([])
   const [selectedDiscoveredPath, setSelectedDiscoveredPath] = useState<string | null>(null)
   const [folderScanError, setFolderScanError] = useState<string | null>(null)
-
-  // Carica cronologia all'apertura del dialog
-  React.useEffect(() => {
-    if (isOpen) {
-      setRecentSolutions(getRecentPaths('dna_recent_solutions'))
-      setRecentFolders(getRecentPaths('dna_recent_folders'))
-      setRecentAssemblies(getRecentPaths('dna_recent_assemblies'))
-    }
-  }, [isOpen])
 
   if (!isOpen) return null
 

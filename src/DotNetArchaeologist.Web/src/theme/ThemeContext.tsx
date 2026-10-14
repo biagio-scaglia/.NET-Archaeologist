@@ -1,16 +1,9 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { THEMES } from './themes'
-import type { RetroTheme, ThemeConfig } from './themes'
-
-interface ThemeContextType {
-  theme: RetroTheme
-  currentConfig: ThemeConfig
-  setTheme: (theme: RetroTheme) => void
-  availableThemes: ThemeConfig[]
-}
-
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
+import type { RetroTheme } from './themes'
+import { ThemeContext } from './ThemeContextDefinition'
+import type { ThemeContextType } from './ThemeContextDefinition'
 
 const STORAGE_KEY = 'dotnet_archaeologist_theme'
 
@@ -78,17 +71,4 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
-}
-
-export const useRetroTheme = (): ThemeContextType => {
-  const context = useContext(ThemeContext)
-  if (!context) {
-    return {
-      theme: 'win98',
-      currentConfig: THEMES.win98,
-      setTheme: () => {},
-      availableThemes: Object.values(THEMES)
-    }
-  }
-  return context
 }

@@ -46,11 +46,16 @@ export const DecompilerView: React.FC<DecompilerViewProps> = ({
     return code.split('\n')
   }, [code])
 
+  const lineNumbersText = React.useMemo(() => {
+    if (!showLineNumbers || lines.length === 0) return ''
+    return Array.from({ length: lines.length }, (_, i) => i + 1).join('\n')
+  }, [showLineNumbers, lines.length])
+
   const matchCount = React.useMemo(() => {
     if (!codeFilter.trim() || !code) return 0
     const q = codeFilter.toLowerCase()
     return lines.filter(l => l.toLowerCase().includes(q)).length
-  }, [lines, codeFilter])
+  }, [lines, codeFilter, code])
 
   return (
     <div className="code-viewer-container">
@@ -185,12 +190,12 @@ export const DecompilerView: React.FC<DecompilerViewProps> = ({
                   borderRight: '1px solid var(--retro-border-light)',
                   textAlign: 'right',
                   fontFamily: 'monospace',
+                  whiteSpace: 'pre',
+                  lineHeight: 'inherit',
                   opacity: 0.7
                 }}
               >
-                {lines.map((_, i) => (
-                  <div key={i}>{i + 1}</div>
-                ))}
+                {lineNumbersText}
               </div>
             )}
             <code style={{ flex: 1, overflowX: 'auto', display: 'block' }}>

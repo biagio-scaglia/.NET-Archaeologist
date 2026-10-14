@@ -1,5 +1,5 @@
 import React from 'react'
-import { useRetroTheme } from '../theme/ThemeContext'
+import { useRetroTheme } from '../theme/useRetroTheme'
 import { SearchIcon, StringConstantIcon, AssemblyIcon } from './icons/RetroIcons'
 
 interface MenuBarProps {

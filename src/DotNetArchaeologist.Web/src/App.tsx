@@ -11,6 +11,7 @@ import { SolutionOverview } from './components/SolutionOverview'
 import { TechnicalDiagram } from './components/TechnicalDiagram'
 import { SystemSitemap360 } from './components/SystemSitemap360'
 import { ExecutiveReportView } from './components/ExecutiveReportView'
+import { GlobalSearchDialog } from './components/GlobalSearchDialog'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import type { AssemblyDescriptor, TreeNamespaceGroup, TypeInfo, SolutionDescriptor, ExecutiveReport } from './types/api'
 
@@ -29,9 +30,25 @@ export const App: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false)
   const [decompileLoading, setDecompileLoading] = useState<boolean>(false)
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
+  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false)
   const [isAboutOpen, setIsAboutOpen] = useState<boolean>(false)
   const [statusMessage, setStatusMessage] = useState<string>('Pronto')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  // Scorciatoia globale per Trova/Cerca (Ctrl+K o F3)
+  React.useEffect(() => {
+    const handleGlobalKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setIsSearchOpen(prev => !prev)
+      } else if (e.key === 'F3') {
+        e.preventDefault()
+        setIsSearchOpen(true)
+      }
+    }
+    window.addEventListener('keydown', handleGlobalKey)
+    return () => window.removeEventListener('keydown', handleGlobalKey)
+  }, [])
 
   const selectedTypeInfo = React.useMemo<TypeInfo | null>(() => {
     if (!assembly || !selectedTypeFullName) return null
@@ -334,6 +351,7 @@ export const App: React.FC = () => {
           onOpenClick={() => setIsDialogOpen(true)}
           onResetClick={handleReset}
           onAboutClick={() => setIsAboutOpen(true)}
+          onSearchClick={() => setIsSearchOpen(true)}
         />
 
         {(solution || assembly) && (
@@ -503,6 +521,21 @@ export const App: React.FC = () => {
       <AboutDialog
         isOpen={isAboutOpen}
         onClose={() => setIsAboutOpen(false)}
+      />
+
+      <GlobalSearchDialog
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        solution={solution}
+        assembly={assembly}
+        namespaces={namespaces}
+        onSelectType={(fullName) => {
+          setViewMode('assembly')
+          handleSelectType(fullName)
+        }}
+        onOpenAssemblyPath={(path) => handleInspectPath(path)}
+        onOpenSitemap={() => setViewMode('sitemap360')}
+        onOpenSolution={() => setViewMode('solution')}
       />
     </div>
   )

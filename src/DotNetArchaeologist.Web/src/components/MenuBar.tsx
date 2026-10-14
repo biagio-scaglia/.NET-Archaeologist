@@ -5,12 +5,14 @@ interface MenuBarProps {
   onOpenClick: () => void
   onResetClick: () => void
   onAboutClick: () => void
+  onSearchClick?: () => void
 }
 
 export const MenuBar: React.FC<MenuBarProps> = ({
   onOpenClick,
   onResetClick,
-  onAboutClick
+  onAboutClick,
+  onSearchClick
 }) => {
   const { theme, setTheme } = useRetroTheme()
 
@@ -19,6 +21,11 @@ export const MenuBar: React.FC<MenuBarProps> = ({
       <div className="menu-item" onClick={onOpenClick}>
         <u>F</u>ile - Apri Assembly...
       </div>
+      {onSearchClick && (
+        <div className="menu-item" onClick={onSearchClick} title="Trova in classi, API, tabelle e processi (Ctrl+K)">
+          <u>C</u>erca Globale... (Ctrl+K)
+        </div>
+      )}
       <div className="menu-item" onClick={onResetClick}>
         <u>R</u>eimposta
       </div>

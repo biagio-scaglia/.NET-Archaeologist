@@ -211,8 +211,8 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
   }, [sitemapItems, searchQuery])
 
   const selectedItem = useMemo(() => {
-    return sitemapItems.find(i => i.id === selectedItemId) ?? (sitemapItems[0] ?? null)
-  }, [sitemapItems, selectedItemId])
+    return sitemapItems.find(i => i.id === selectedItemId) ?? (filteredItems[0] ?? null)
+  }, [sitemapItems, filteredItems, selectedItemId])
 
   // Raggruppamento per sezione per la vista ad albero
   const groupedSections = useMemo(() => {
@@ -363,27 +363,31 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
                   <div style={{ fontWeight: 'bold', color: '#550055', borderBottom: '2px solid #550055', paddingBottom: '4px', marginBottom: '8px' }}>
                     1. WEB &amp; SITEMAP (Ingresso)
                   </div>
-                  {sitemapItems.filter(i => i.kind === 'page' || i.kind === 'controller').map(item => {
-                    const isSel = selectedItem?.id === item.id
-                    return (
-                      <div
-                        key={item.id}
-                        onClick={() => setSelectedItemId(item.id)}
-                        style={{
-                          padding: '6px',
-                          marginBottom: '6px',
-                          backgroundColor: isSel ? '#550055' : '#ffffff',
-                          color: isSel ? '#ffffff' : '#000000',
-                          border: isSel ? '2px solid #000' : '1px solid #cc99cc',
-                          cursor: 'pointer',
-                          boxShadow: isSel ? '2px 2px 4px rgba(0,0,0,0.3)' : undefined,
-                        }}
-                      >
-                        <div style={{ fontWeight: 'bold', fontSize: '11px' }}>{item.title}</div>
-                        <div style={{ fontSize: '10px', opacity: 0.85 }}>Route: {item.routeOrCall}</div>
-                      </div>
-                    )
-                  })}
+                  {filteredItems.filter(i => i.kind === 'page' || i.kind === 'controller').length === 0 ? (
+                    <div style={{ fontSize: '10px', color: '#666', fontStyle: 'italic' }}>Nessun elemento</div>
+                  ) : (
+                    filteredItems.filter(i => i.kind === 'page' || i.kind === 'controller').map(item => {
+                      const isSel = selectedItem?.id === item.id
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => setSelectedItemId(item.id)}
+                          style={{
+                            padding: '6px',
+                            marginBottom: '6px',
+                            backgroundColor: isSel ? '#550055' : '#ffffff',
+                            color: isSel ? '#ffffff' : '#000000',
+                            border: isSel ? '2px solid #000' : '1px solid #cc99cc',
+                            cursor: 'pointer',
+                            boxShadow: isSel ? '2px 2px 4px rgba(0,0,0,0.3)' : undefined,
+                          }}
+                        >
+                          <div style={{ fontWeight: 'bold', fontSize: '11px' }}>{item.title}</div>
+                          <div style={{ fontSize: '10px', opacity: 0.85 }}>Route: {item.routeOrCall}</div>
+                        </div>
+                      )
+                    })
+                  )}
                 </div>
 
                 {/* 2. SERVIZI & CONTRATTI */}
@@ -391,29 +395,33 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
                   <div style={{ fontWeight: 'bold', color: '#000080', borderBottom: '2px solid #000080', paddingBottom: '4px', marginBottom: '8px' }}>
                     2. SERVIZI &amp; API (Business)
                   </div>
-                  {sitemapItems.filter(i => i.kind === 'service' || i.kind === 'contract').map(item => {
-                    const isSel = selectedItem?.id === item.id
-                    const isLinked = selectedItem?.connectedServices.includes(item.title)
-                    return (
-                      <div
-                        key={item.id}
-                        onClick={() => setSelectedItemId(item.id)}
-                        style={{
-                          padding: '6px',
-                          marginBottom: '6px',
-                          backgroundColor: isSel ? '#000080' : isLinked ? '#fff2cc' : '#ffffff',
-                          color: isSel ? '#ffffff' : '#000000',
-                          border: isSel ? '2px solid #000' : isLinked ? '2px solid #ff9900' : '1px solid #99aacc',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <div style={{ fontWeight: 'bold', fontSize: '11px' }}>
-                          [{item.kind === 'contract' ? 'IFACE' : 'SVC'}] {item.title}
+                  {filteredItems.filter(i => i.kind === 'service' || i.kind === 'contract').length === 0 ? (
+                    <div style={{ fontSize: '10px', color: '#666', fontStyle: 'italic' }}>Nessun elemento</div>
+                  ) : (
+                    filteredItems.filter(i => i.kind === 'service' || i.kind === 'contract').map(item => {
+                      const isSel = selectedItem?.id === item.id
+                      const isLinked = selectedItem?.connectedServices.includes(item.title)
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => setSelectedItemId(item.id)}
+                          style={{
+                            padding: '6px',
+                            marginBottom: '6px',
+                            backgroundColor: isSel ? '#000080' : isLinked ? '#fff2cc' : '#ffffff',
+                            color: isSel ? '#ffffff' : '#000000',
+                            border: isSel ? '2px solid #000' : isLinked ? '2px solid #ff9900' : '1px solid #99aacc',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <div style={{ fontWeight: 'bold', fontSize: '11px' }}>
+                            [{item.kind === 'contract' ? 'IFACE' : 'SVC'}] {item.title}
+                          </div>
+                          <div style={{ fontSize: '10px', opacity: 0.85 }}>{item.routeOrCall}</div>
                         </div>
-                        <div style={{ fontSize: '10px', opacity: 0.85 }}>{item.routeOrCall}</div>
-                      </div>
-                    )
-                  })}
+                      )
+                    })
+                  )}
                 </div>
 
                 {/* 3. DATABASE & TABELLE */}
@@ -421,27 +429,31 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
                   <div style={{ fontWeight: 'bold', color: '#006633', borderBottom: '2px solid #006633', paddingBottom: '4px', marginBottom: '8px' }}>
                     3. DATABASE &amp; DATI (Persistenza)
                   </div>
-                  {sitemapItems.filter(i => i.kind === 'database' || i.kind === 'table' || i.kind === 'procedure').slice(0, 10).map(item => {
-                    const isSel = selectedItem?.id === item.id
-                    const isLinked = selectedItem?.connectedTables.some(t => item.title.includes(t))
-                    return (
-                      <div
-                        key={item.id}
-                        onClick={() => setSelectedItemId(item.id)}
-                        style={{
-                          padding: '6px',
-                          marginBottom: '6px',
-                          backgroundColor: isSel ? '#006633' : isLinked ? '#fff2cc' : '#ffffff',
-                          color: isSel ? '#ffffff' : '#000000',
-                          border: isSel ? '2px solid #000' : isLinked ? '2px solid #ff9900' : '1px solid #99ccaa',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <div style={{ fontWeight: 'bold', fontSize: '11px' }}>{item.title}</div>
-                        <div style={{ fontSize: '10px', opacity: 0.85 }}>{item.routeOrCall}</div>
-                      </div>
-                    )
-                  })}
+                  {filteredItems.filter(i => i.kind === 'database' || i.kind === 'table' || i.kind === 'procedure').length === 0 ? (
+                    <div style={{ fontSize: '10px', color: '#666', fontStyle: 'italic' }}>Nessun elemento</div>
+                  ) : (
+                    filteredItems.filter(i => i.kind === 'database' || i.kind === 'table' || i.kind === 'procedure').slice(0, 10).map(item => {
+                      const isSel = selectedItem?.id === item.id
+                      const isLinked = selectedItem?.connectedTables.some(t => item.title.includes(t))
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => setSelectedItemId(item.id)}
+                          style={{
+                            padding: '6px',
+                            marginBottom: '6px',
+                            backgroundColor: isSel ? '#006633' : isLinked ? '#fff2cc' : '#ffffff',
+                            color: isSel ? '#ffffff' : '#000000',
+                            border: isSel ? '2px solid #000' : isLinked ? '2px solid #ff9900' : '1px solid #99ccaa',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <div style={{ fontWeight: 'bold', fontSize: '11px' }}>{item.title}</div>
+                          <div style={{ fontSize: '10px', opacity: 0.85 }}>{item.routeOrCall}</div>
+                        </div>
+                      )
+                    })
+                  )}
                 </div>
 
                 {/* 4. BATCH & BACKGROUND WORKER */}
@@ -449,26 +461,30 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
                   <div style={{ fontWeight: 'bold', color: '#994400', borderBottom: '2px solid #994400', paddingBottom: '4px', marginBottom: '8px' }}>
                     4. BATCH WORKER (Asincrono)
                   </div>
-                  {sitemapItems.filter(i => i.kind === 'batch').map(item => {
-                    const isSel = selectedItem?.id === item.id
-                    return (
-                      <div
-                        key={item.id}
-                        onClick={() => setSelectedItemId(item.id)}
-                        style={{
-                          padding: '6px',
-                          marginBottom: '6px',
-                          backgroundColor: isSel ? '#994400' : '#ffffff',
-                          color: isSel ? '#ffffff' : '#000000',
-                          border: isSel ? '2px solid #000' : '1px solid #ccaa88',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <div style={{ fontWeight: 'bold', fontSize: '11px' }}>[JOB] {item.title}</div>
-                        <div style={{ fontSize: '10px', opacity: 0.85 }}>{item.routeOrCall}</div>
-                      </div>
-                    )
-                  })}
+                  {filteredItems.filter(i => i.kind === 'batch').length === 0 ? (
+                    <div style={{ fontSize: '10px', color: '#666', fontStyle: 'italic' }}>Nessun elemento</div>
+                  ) : (
+                    filteredItems.filter(i => i.kind === 'batch').map(item => {
+                      const isSel = selectedItem?.id === item.id
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => setSelectedItemId(item.id)}
+                          style={{
+                            padding: '6px',
+                            marginBottom: '6px',
+                            backgroundColor: isSel ? '#994400' : '#ffffff',
+                            color: isSel ? '#ffffff' : '#000000',
+                            border: isSel ? '2px solid #000' : '1px solid #ccaa88',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <div style={{ fontWeight: 'bold', fontSize: '11px' }}>[JOB] {item.title}</div>
+                          <div style={{ fontSize: '10px', opacity: 0.85 }}>{item.routeOrCall}</div>
+                        </div>
+                      )
+                    })
+                  )}
                 </div>
               </div>
             </div>

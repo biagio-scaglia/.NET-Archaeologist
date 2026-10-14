@@ -102,7 +102,7 @@ describe('SystemSitemap360 Component', () => {
 
     const apiBtn = screen.getByRole('button', { name: /\[Catalogo Contratti & API\]/i })
     fireEvent.click(apiBtn)
-    expect(screen.getByText(/IWsGestPdcService/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/IWsGestPdcService/i).length).toBeGreaterThan(0)
   })
 
   it('filters items when typing into search box and updates detail panel', () => {
@@ -119,7 +119,21 @@ describe('SystemSitemap360 Component', () => {
     const searchInput = screen.getByPlaceholderText(/Cerca pagina, servizio, tabella/i)
     fireEvent.change(searchInput, { target: { value: 'WsGest' } })
 
-    expect(screen.getByText('WsGestPdcService')).toBeInTheDocument()
+    expect(screen.getAllByText(/WsGestPdcService/i).length).toBeGreaterThan(0)
     expect(screen.getByText(/Visione a 360° del Componente/i)).toBeInTheDocument()
+
+    // Seleziona esplicitamente il blocco del servizio
+    const svcCard = screen.getByText(/\[SVC\] WsGestPdcService/)
+    fireEvent.click(svcCard)
+
+    // Clicca sul pulsante di decompilazione codice
+    const decompileBtn = screen.getByRole('button', { name: /Decompila e Ispeziona Codice/i })
+    fireEvent.click(decompileBtn)
+    expect(handleOpen).toHaveBeenCalledWith('C:\\cartella\\GestPdC.Service\\bin\\GestPdC.Service.dll')
+
+    // Clicca sul pulsante Chiudi Mappa
+    const closeBtn = screen.getByRole('button', { name: /Chiudi Mappa/i })
+    fireEvent.click(closeBtn)
+    expect(handleClose).toHaveBeenCalled()
   })
 })

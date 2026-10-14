@@ -35,6 +35,21 @@ export interface ArchitectureNarration {
   couplingInsight: string
   recommendation: string
   interactiveQuestions: Array<{ question: string; answer: string }>
+  metrics?: {
+    totalNodes: number
+    totalEdges: number
+    webCount: number
+    serviceCount: number
+    dbCount: number
+    batchCount: number
+    hubTitle?: string
+    hubDegree?: number
+    nodeCount: number
+    edgeCount: number
+    servicesCount: number
+    databaseCount: number
+    maxHubDegree: number
+  }
 }
 
 /**
@@ -166,15 +181,22 @@ export function narrateArchitectureConnections(
         break
     }
 
-    const walkthrough = `Ti spiego il ruolo di '${selectedNode.title}': fa parte della categoria [${selectedNode.category}] ed è sviluppato con tecnologia '${selectedNode.technology}'. ${roleExplanation} ${
-      inflow.length > 0
-        ? `A monte riceve richieste da ${inflow.length} consumatore/i (${inflow.map(i => i.connectedNodeTitle).slice(0, 3).join(', ')}).`
-        : `Non presenta consumatori a monte nel perimetro visibile.`
-    } ${
-      outflow.length > 0
-        ? `A valle per completare il suo compito si connette a ${outflow.length} componente/i (${outflow.map(o => o.connectedNodeTitle).slice(0, 3).join(', ')}).`
-        : `Non effettua chiamate a valle verso altri nodi tracciati.`
-    }`
+    const walkthrough = `Ti spiego il ruolo di '${selectedNode.title}': fa parte della categoria [${selectedNode.category}] ed è sviluppato con tecnologia '${selectedNode.technology}'.
+
+📋 Ruolo Architetturale:
+${roleExplanation}
+
+${
+  inflow.length > 0
+    ? `📥 Flusso a Monte (Inflow: ${inflow.length}):\nRiceve chiamate o messaggi operativi da: ${inflow.map(i => `'${i.connectedNodeTitle}'`).slice(0, 3).join(', ')}.`
+    : `📥 Flusso a Monte:\nNessun consumatore diretto a monte rilevato nel perimetro.`
+}
+
+${
+  outflow.length > 0
+    ? `📤 Flusso a Valle (Outflow: ${outflow.length}):\nPer completare le sue operazioni si appoggia a: ${outflow.map(o => `'${o.connectedNodeTitle}'`).slice(0, 3).join(', ')}.`
+    : `📤 Flusso a Valle:\nNessuna chiamata a valle verso altri nodi tracciati.`
+}`
 
     let recommendation = `Mantieni l'interfaccia di '${selectedNode.title}' stabile per tutelare i consumatori a monte. Per qualsiasi refactoring, predisponi test di regressione sui nodi connessi.`
     if (selectedNode.category === 'Service' && selectedNode.technology.toLowerCase().includes('wcf')) {
@@ -230,16 +252,24 @@ export function narrateArchitectureConnections(
     }
   })
 
-  const solutionContext = solution ? ` per la soluzione '${solution.name}'` : ''
-  const generalWalkthrough = `Benvenuto nella mappa delle connessioni del sistema${solutionContext}! L'architettura è composta da ${nodes.length} nodi e ${edges.length} connessioni tracciate. Il flusso operativo principale segue il percorso classico enterprise: le richieste entrano dal layer di presentazione (${webNodes.length} moduli Web), fluiscono attraverso i servizi di logica di business (${svcNodes.length} servizi) e raggiungono i contesti di persistenza (${dbNodes.length} contesti dati). ${
+  const solutionName = solution?.name
+  const generalWalkthrough = `Benvenuto nella mappa delle connessioni del sistema!${solutionName ? ` (Soluzione: ${solutionName})` : ''}
+
+📌 Topologia Complessiva:
+L'architettura comprende ${nodes.length} nodi e ${edges.length} connessioni tracciate.
+
+🔄 Flusso Operativo:
+Le richieste entrano dal layer di presentazione (${webNodes.length} moduli Web), fluiscono attraverso i servizi di logica di business (${svcNodes.length} servizi) e raggiungono i contesti di persistenza (${dbNodes.length} contesti dati).${
     batchNodes.length > 0
-      ? `Parallelamente, operano ${batchNodes.length} worker batch che eseguono compiti schedulati e processi in background.`
+      ? `\n\n⚙️ Background Workers:\nParallelamente operano ${batchNodes.length} worker batch che eseguono compiti schedulati e processi in background.`
       : ''
-  } ${
+  }${
     hubNode
-      ? `Il punto nevralgico con il massimo numero di collegamenti è '${(hubNode as DiagramNodeLike).title}' con ${maxDegree} connessioni attive.`
+      ? `\n\n⚡ Snodo Nevralgico:\nIl punto nevralgico con il massimo numero di collegamenti è '${(hubNode as DiagramNodeLike).title}' con ${maxDegree} connessioni attive.`
       : ''
-  } Fai clic su qualsiasi componente o linea di collegamento per ascoltare la spiegazione dettagliata del suo ruolo e dei flussi scambiati!`
+  }
+
+👉 Fai clic su qualsiasi componente o linea di collegamento per ascoltare la spiegazione dettagliata del suo ruolo e dei flussi scambiati!`
 
   return {
     headline: "🎙️ L'Archeologo Spiega la Topologia delle Connessioni",
@@ -251,6 +281,21 @@ export function narrateArchitectureConnections(
       ? `Snodo principale del grafo: '${(hubNode as DiagramNodeLike).title}' con ${maxDegree} collegamenti (inflow + outflow).`
       : `Il grafo presenta una connettività distribuita uniforme.`,
     recommendation: `Isola le dipendenze tra i layer Web e Database introducendo contratti di servizio e API gateway per ridurre l'accoppiamento a cascata.`,
+    metrics: {
+      totalNodes: nodes.length,
+      totalEdges: edges.length,
+      webCount: webNodes.length,
+      serviceCount: svcNodes.length,
+      dbCount: dbNodes.length,
+      batchCount: batchNodes.length,
+      hubTitle: hubNode ? (hubNode as DiagramNodeLike).title : undefined,
+      hubDegree: maxDegree > 0 ? maxDegree : undefined,
+      nodeCount: nodes.length,
+      edgeCount: edges.length,
+      servicesCount: svcNodes.length,
+      databaseCount: dbNodes.length,
+      maxHubDegree: maxDegree,
+    },
     interactiveQuestions: [
       {
         question: 'Come viaggiano le informazioni dal Web al Database?',

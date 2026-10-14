@@ -53,6 +53,112 @@ function formatShortTech(tech: unknown): string {
   return tech
 }
 
+function renderTechnicalItem(item: string, idx: number): React.ReactNode {
+  const tagMatch = item.match(/^\[([^\]]+)\]\s*(.*)$/)
+  if (tagMatch) {
+    const rawTag = tagMatch[1].trim()
+    const rest = tagMatch[2].trim()
+
+    let tagBg = '#f1f5f9'
+    let tagColor = '#475569'
+    let tagBorder = '#cbd5e1'
+
+    if (rawTag === 'GET') {
+      tagBg = '#e0f2fe'
+      tagColor = '#0369a1'
+      tagBorder = '#bae6fd'
+    } else if (rawTag === 'POST') {
+      tagBg = '#dcfce7'
+      tagColor = '#15803d'
+      tagBorder = '#bbf7d0'
+    } else if (rawTag.includes('POST') && rawTag.includes('GET')) {
+      tagBg = '#ede9fe'
+      tagColor = '#6d28d9'
+      tagBorder = '#ddd6fe'
+    } else if (rawTag.includes('TRIGGER')) {
+      tagBg = '#fef3c7'
+      tagColor = '#b45309'
+      tagBorder = '#fde68a'
+    } else if (rawTag.includes('TABLE') || rawTag.includes('ENTITY')) {
+      tagBg = '#ecfdf5'
+      tagColor = '#047857'
+      tagBorder = '#a7f3d0'
+    } else if (rawTag === 'DELETE') {
+      tagBg = '#fee2e2'
+      tagColor = '#b91c1c'
+      tagBorder = '#fecaca'
+    } else if (rawTag === 'PUT') {
+      tagBg = '#ffedd5'
+      tagColor = '#c2410c'
+      tagBorder = '#fed7aa'
+    }
+
+    return (
+      <div
+        key={idx}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '5px',
+          fontSize: '10px',
+          lineHeight: '16px',
+          marginBottom: '2px',
+          overflow: 'hidden',
+        }}
+        title={item}
+      >
+        <span
+          style={{
+            fontSize: '8.5px',
+            fontWeight: 'bold',
+            fontFamily: 'Consolas, monospace',
+            backgroundColor: tagBg,
+            color: tagColor,
+            border: `1px solid ${tagBorder}`,
+            borderRadius: '2px',
+            padding: '0 4px',
+            lineHeight: '12px',
+            flexShrink: 0,
+          }}
+        >
+          {rawTag}
+        </span>
+        <span
+          style={{
+            fontFamily: 'Consolas, monospace',
+            color: '#1f2937',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            fontSize: '10px',
+          }}
+        >
+          {rest}
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      key={idx}
+      style={{
+        fontSize: '10px',
+        fontFamily: 'Consolas, monospace',
+        color: '#1f2937',
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        lineHeight: '16px',
+      }}
+      title={item}
+    >
+      {item}
+    </div>
+  )
+}
+
+
 export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
   solution,
   assembly,
@@ -619,24 +725,96 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
   const getCategoryColor = (cat: DiagramNode['category']) => {
     switch (cat) {
       case 'Service':
-        return { border: '#000080', bg: '#eef3fc', header: '#000080', text: '#ffffff' }
+        return {
+          border: '#003399',
+          bg: '#f4f8fe',
+          header: '#002277',
+          headerGradient: 'linear-gradient(90deg, #001f5c 0%, #003399 100%)',
+          text: '#ffffff',
+          pillBg: 'rgba(255, 255, 255, 0.2)',
+          accent: '#003399',
+        }
       case 'Database':
-        return { border: '#006633', bg: '#eefbf3', header: '#006633', text: '#ffffff' }
+        return {
+          border: '#006633',
+          bg: '#f2fbf6',
+          header: '#00552b',
+          headerGradient: 'linear-gradient(90deg, #004d26 0%, #007a3d 100%)',
+          text: '#ffffff',
+          pillBg: 'rgba(255, 255, 255, 0.2)',
+          accent: '#006633',
+        }
       case 'Batch':
-        return { border: '#994400', bg: '#fff6ed', header: '#994400', text: '#ffffff' }
+        return {
+          border: '#994400',
+          bg: '#fff8f0',
+          header: '#883800',
+          headerGradient: 'linear-gradient(90deg, #7c2d12 0%, #b45309 100%)',
+          text: '#ffffff',
+          pillBg: 'rgba(255, 255, 255, 0.2)',
+          accent: '#994400',
+        }
       case 'Web':
-        return { border: '#550055', bg: '#faedfa', header: '#550055', text: '#ffffff' }
+        return {
+          border: '#550055',
+          bg: '#fbf2fb',
+          header: '#4a004a',
+          headerGradient: 'linear-gradient(90deg, #581c87 0%, #7e22ce 100%)',
+          text: '#ffffff',
+          pillBg: 'rgba(255, 255, 255, 0.2)',
+          accent: '#550055',
+        }
       case 'Interface':
-        return { border: '#660066', bg: '#fdf2ff', header: '#660066', text: '#ffffff' }
+        return {
+          border: '#660066',
+          bg: '#fdf4ff',
+          header: '#550055',
+          headerGradient: 'linear-gradient(90deg, #701a75 0%, #a21caf 100%)',
+          text: '#ffffff',
+          pillBg: 'rgba(255, 255, 255, 0.2)',
+          accent: '#660066',
+        }
       case 'Struct':
-        return { border: '#005533', bg: '#f0faf4', header: '#005533', text: '#ffffff' }
+        return {
+          border: '#005533',
+          bg: '#f0faf4',
+          header: '#004429',
+          headerGradient: 'linear-gradient(90deg, #064e3b 0%, #059669 100%)',
+          text: '#ffffff',
+          pillBg: 'rgba(255, 255, 255, 0.2)',
+          accent: '#005533',
+        }
       case 'Enum':
-        return { border: '#774400', bg: '#fff8ee', header: '#774400', text: '#ffffff' }
+        return {
+          border: '#774400',
+          bg: '#fff8ee',
+          header: '#663900',
+          headerGradient: 'linear-gradient(90deg, #78350f 0%, #d97706 100%)',
+          text: '#ffffff',
+          pillBg: 'rgba(255, 255, 255, 0.2)',
+          accent: '#774400',
+        }
       case 'Record':
-        return { border: '#004466', bg: '#f0f8ff', header: '#004466', text: '#ffffff' }
+        return {
+          border: '#004466',
+          bg: '#f0f8ff',
+          header: '#003652',
+          headerGradient: 'linear-gradient(90deg, #0c4a6e 0%, #0284c7 100%)',
+          text: '#ffffff',
+          pillBg: 'rgba(255, 255, 255, 0.2)',
+          accent: '#004466',
+        }
       case 'Class':
       default:
-        return { border: '#333333', bg: '#f8f9fa', header: '#444444', text: '#ffffff' }
+        return {
+          border: '#334155',
+          bg: '#f8fafc',
+          header: '#1e293b',
+          headerGradient: 'linear-gradient(90deg, #1e293b 0%, #475569 100%)',
+          text: '#ffffff',
+          pillBg: 'rgba(255, 255, 255, 0.2)',
+          accent: '#334155',
+        }
     }
   }
 
@@ -652,23 +830,25 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
         padding: '4px',
       }}
     >
-      {/* Barra degli Strumenti Tecnico / Disegno CAD Win98 */}
+      {/* Barra degli Strumenti Tecnico / Disegno CAD Ribbon */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          backgroundColor: '#dfdfdf',
-          border: '2px groove #fff',
-          padding: '4px 8px',
-          marginBottom: '4px',
+          backgroundColor: '#ebe9ed',
+          borderBottom: '2px solid #a0a0a0',
+          padding: '6px 10px',
           fontSize: '11px',
           flexWrap: 'wrap',
-          gap: '6px',
+          gap: '8px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <strong>[DISEGNO TECNICO ARCHITETTURALE]</strong>
+          <span style={{ fontWeight: 'bold', color: '#000080', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <span>📐</span> [DISEGNO TECNICO ARCHITETTURALE]
+          </span>
 
           {solution && (
             <button
@@ -676,46 +856,52 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
               style={{
                 fontWeight: 'bold',
                 cursor: 'pointer',
-                padding: '2px 6px',
+                padding: '3px 8px',
                 fontSize: '11px',
-                backgroundColor: diagramView === 'graph' ? '#000080' : undefined,
-                color: diagramView === 'graph' ? '#fff' : undefined,
+                backgroundColor: diagramView === 'graph' ? '#000080' : '#ffffff',
+                color: diagramView === 'graph' ? '#ffffff' : '#000000',
+                border: '1px solid #7f9db9',
+                borderRadius: '2px',
               }}
             >
               {diagramView === 'system' ? 'Mostra Grafo Dipendenze CLI >>' : '<< Torna a Mappa Sistema'}
             </button>
           )}
 
-          <span>|</span>
-          <label>Filtro Layer:</label>
-          <select
-            value={filter}
-            onChange={e => setFilter(e.target.value as LayerFilter)}
-            style={{ fontSize: '11px' }}
-          >
-            <option value="all">Tutti i Componenti ({layerCounts.all})</option>
-            {diagramView === 'system' && (
-              <>
-                <option value="services">Microservizi &amp; WCF ({layerCounts.services})</option>
-                <option value="databases">Database &amp; Tabelle EF ({layerCounts.databases})</option>
-                <option value="batch">Processi Batch &amp; Worker ({layerCounts.batch})</option>
-              </>
-            )}
-            <option value="classes">Solo Classi Concrete ({layerCounts.classes})</option>
-            <option value="interfaces">Solo Interfacce Contratto ({layerCounts.interfaces})</option>
-          </select>
+          <span style={{ color: '#aaa' }}>|</span>
 
-          <span>|</span>
-          <label>Connessioni:</label>
-          <select
-            value={edgeMode}
-            onChange={e => setEdgeMode(e.target.value as EdgeMode)}
-            style={{ fontSize: '11px', fontWeight: 'bold' }}
-          >
-            <option value="focus">[Focus] Nodo Selezionato</option>
-            <option value="all">[Tutte] Mostra Connessioni</option>
-            <option value="none">[Nessuna] Solo Blocchi CAD</option>
-          </select>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <label style={{ fontWeight: '600' }}>Filtro Layer:</label>
+            <select
+              value={filter}
+              onChange={e => setFilter(e.target.value as LayerFilter)}
+              style={{ fontSize: '11px', padding: '2px 4px', border: '1px solid #7f9db9', borderRadius: '2px', backgroundColor: '#fff' }}
+            >
+              <option value="all">Tutti i Componenti ({layerCounts.all})</option>
+              {diagramView === 'system' && (
+                <>
+                  <option value="services">Microservizi &amp; WCF ({layerCounts.services})</option>
+                  <option value="databases">Database &amp; Tabelle EF ({layerCounts.databases})</option>
+                  <option value="batch">Processi Batch &amp; Worker ({layerCounts.batch})</option>
+                </>
+              )}
+              <option value="classes">Solo Classi Concrete ({layerCounts.classes})</option>
+              <option value="interfaces">Solo Interfacce Contratto ({layerCounts.interfaces})</option>
+            </select>
+          </div>
+
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <label style={{ fontWeight: '600' }}>Connessioni:</label>
+            <select
+              value={edgeMode}
+              onChange={e => setEdgeMode(e.target.value as EdgeMode)}
+              style={{ fontSize: '11px', fontWeight: 'bold', padding: '2px 4px', border: '1px solid #7f9db9', borderRadius: '2px', backgroundColor: '#fff' }}
+            >
+              <option value="focus">[Focus] Nodo Selezionato</option>
+              <option value="all">[Tutte] Mostra Connessioni</option>
+              <option value="none">[Nessuna] Solo Blocchi CAD</option>
+            </select>
+          </div>
 
           {diagramView === 'graph' && sessionId && (
             <label style={{ display: 'flex', alignItems: 'center', gap: '3px', cursor: 'pointer' }}>
@@ -728,7 +914,9 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
             </label>
           )}
 
-          <span>|</span>
+          <span style={{ color: '#aaa' }}>|</span>
+
+          {/* Pulsante Evidenziato per L'Archeologo Spiega */}
           <button
             type="button"
             onClick={() => {
@@ -738,32 +926,47 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
             style={{
               fontWeight: 'bold',
               cursor: 'pointer',
-              padding: '2px 8px',
+              padding: '3px 10px',
               fontSize: '11px',
-              backgroundColor: showArchaeologistPanel ? '#000080' : undefined,
-              color: showArchaeologistPanel ? '#ffffff' : undefined,
-              display: 'flex',
+              backgroundColor: showArchaeologistPanel ? '#003399' : '#ffffff',
+              color: showArchaeologistPanel ? '#ffffff' : '#002266',
+              border: showArchaeologistPanel ? '1px solid #001144' : '1px solid #7f9db9',
+              boxShadow: showArchaeologistPanel
+                ? 'inset 0 1px 3px rgba(0,0,0,0.4), 0 0 6px rgba(0,51,153,0.4)'
+                : '0 1px 2px rgba(0,0,0,0.1)',
+              display: 'inline-flex',
               alignItems: 'center',
-              gap: '4px',
+              gap: '6px',
+              borderRadius: '2px',
             }}
             title="Attiva o disattiva il pannello di narrazione in linguaggio naturale delle connessioni"
           >
-            <span>🎙️</span>
+            <span style={{ fontSize: '13px' }}>🎙️</span>
             <span>L'Archeologo Spiega Connessioni</span>
+            <span
+              style={{
+                width: '7px',
+                height: '7px',
+                borderRadius: '50%',
+                backgroundColor: showArchaeologistPanel ? '#4ade80' : '#94a3b8',
+                display: 'inline-block',
+                boxShadow: showArchaeologistPanel ? '0 0 5px #4ade80' : 'none',
+              }}
+            />
           </button>
         </div>
 
         {/* Ricerca e Zoom */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-            <span style={{ fontSize: '10px' }}>Trova:</span>
+            <span style={{ fontSize: '10px', fontWeight: 'bold' }}>Trova:</span>
             <input
               type="text"
               placeholder="Nome tipo..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSelectFirstMatch()}
-              style={{ fontSize: '11px', width: '110px', padding: '1px 3px' }}
+              style={{ fontSize: '11px', width: '120px', padding: '2px 5px', border: '1px solid #7f9db9', borderRadius: '2px', backgroundColor: '#fff' }}
             />
             {searchQuery && (
               <span style={{ fontSize: '10px', color: searchMatches.length > 0 ? '#006600' : '#880000', fontWeight: 'bold' }}>
@@ -774,29 +977,29 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
 
           <button
             onClick={() => setZoom(z => Math.max(0.4, Number((z - 0.15).toFixed(2))))}
-            style={{ padding: '1px 6px', fontSize: '11px', cursor: 'pointer' }}
+            style={{ padding: '2px 6px', fontSize: '11px', cursor: 'pointer', border: '1px solid #7f9db9', borderRadius: '2px', backgroundColor: '#fff' }}
           >
             [-] Zoom
           </button>
-          <span style={{ fontFamily: 'monospace', minWidth: '38px', textAlign: 'center' }}>
+          <span style={{ fontFamily: 'monospace', minWidth: '40px', textAlign: 'center', fontWeight: 'bold' }}>
             {Math.round(zoom * 100)}%
           </span>
           <button
             onClick={() => setZoom(z => Math.min(2.5, Number((z + 0.15).toFixed(2))))}
-            style={{ padding: '1px 6px', fontSize: '11px', cursor: 'pointer' }}
+            style={{ padding: '2px 6px', fontSize: '11px', cursor: 'pointer', border: '1px solid #7f9db9', borderRadius: '2px', backgroundColor: '#fff' }}
           >
             [+] Zoom
           </button>
           <button
             onClick={() => setZoom(1)}
-            style={{ padding: '1px 6px', fontSize: '11px', cursor: 'pointer' }}
+            style={{ padding: '2px 6px', fontSize: '11px', cursor: 'pointer', border: '1px solid #7f9db9', borderRadius: '2px', backgroundColor: '#fff' }}
           >
             1:1 Reset
           </button>
           {onClose && (
             <button
               onClick={onClose}
-              style={{ padding: '1px 8px', fontSize: '11px', cursor: 'pointer', marginLeft: '4px' }}
+              style={{ padding: '2px 8px', fontSize: '11px', cursor: 'pointer', marginLeft: '4px', border: '1px solid #7f9db9', borderRadius: '2px', backgroundColor: '#fff' }}
             >
               Chiudi
             </button>
@@ -1057,45 +1260,51 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                     minHeight: `${node.height}px`,
                     backgroundColor: colors.bg,
                     border: isSelected
-                      ? '2px solid #ff0000'
+                      ? '2px solid #ef4444'
                       : isMatched
-                      ? '2px solid #ffaa00'
+                      ? '2px solid #f59e0b'
                       : `2px solid ${colors.border}`,
+                    borderRadius: '3px',
                     boxShadow: isSelected
-                      ? '0 0 6px rgba(255,0,0,0.6)'
+                      ? '0 0 0 3px rgba(239,68,68,0.3), 0 4px 6px -1px rgba(0,0,0,0.1)'
                       : isMatched
-                      ? '0 0 5px rgba(255,170,0,0.5)'
-                      : '2px 2px 0px rgba(0,0,0,0.15)',
+                      ? '0 0 0 3px rgba(245,158,11,0.3), 0 4px 6px -1px rgba(0,0,0,0.1)'
+                      : '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08)',
                     cursor: 'pointer',
                     fontSize: '11px',
                     boxSizing: 'border-box',
                     overflow: 'hidden',
+                    transition: 'box-shadow 0.15s ease, border-color 0.15s ease',
                   }}
                 >
                   {/* Intestazione blocco tecnico */}
                   <div
                     style={{
-                      backgroundColor: colors.header,
+                      background: colors.headerGradient,
                       color: colors.text,
-                      padding: '3px 8px',
+                      padding: '4px 8px',
                       fontWeight: 'bold',
                       fontSize: '11px',
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      gap: '8px',
+                      gap: '6px',
                       overflow: 'hidden',
                       boxSizing: 'border-box',
+                      borderBottom: `1px solid ${colors.border}`,
                     }}
                   >
-                    <span style={{ flexShrink: 0, letterSpacing: '0.5px', lineHeight: '14px' }}>
+                    <span style={{ flexShrink: 0, letterSpacing: '0.5px', lineHeight: '14px', fontSize: '10px' }}>
                       [{node.category.toUpperCase()}]
                     </span>
                     <span
                       style={{
-                        fontSize: '10px',
-                        lineHeight: '14px',
-                        opacity: 0.9,
+                        fontSize: '9.5px',
+                        lineHeight: '13px',
+                        backgroundColor: colors.pillBg,
+                        border: '1px solid rgba(255,255,255,0.3)',
+                        borderRadius: '2px',
+                        padding: '1px 5px',
                         textAlign: 'right',
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
@@ -1110,12 +1319,12 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                   </div>
 
                   {/* Corpo del blocco */}
-                  <div style={{ padding: '6px' }}>
+                  <div style={{ padding: '7px 8px' }}>
                     <div
                       style={{
                         fontWeight: 'bold',
                         fontSize: '12px',
-                        color: '#000080',
+                        color: '#0f172a',
                         lineHeight: '16px',
                         marginBottom: '2px',
                         whiteSpace: 'nowrap',
@@ -1130,7 +1339,7 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                       <div
                         style={{
                           fontSize: '10px',
-                          color: '#555',
+                          color: '#64748b',
                           lineHeight: '14px',
                           marginBottom: '6px',
                           whiteSpace: 'nowrap',
@@ -1145,23 +1354,8 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
 
                     {/* Voci tecniche (endpoint, tabelle, membri) */}
                     {node.items.length > 0 && (
-                      <div style={{ borderTop: '1px solid #ccc', paddingTop: '4px', marginTop: '4px' }}>
-                        {node.items.map((item, idx) => (
-                          <div
-                            key={idx}
-                            style={{
-                              fontSize: '10px',
-                              fontFamily: 'monospace',
-                              color: '#222',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              lineHeight: '15px',
-                            }}
-                          >
-                            {item}
-                          </div>
-                        ))}
+                      <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '5px', marginTop: '4px' }}>
+                        {node.items.map((item, idx) => renderTechnicalItem(item, idx))}
                       </div>
                     )}
                   </div>
@@ -1230,40 +1424,58 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
           </div>
         )}
 
-        {/* Riquadro Dettaglio Tecnico & Spiegazione delle Connessioni Win98 */}
+        {/* Riquadro Dettaglio Tecnico & Spiegazione delle Connessioni */}
         {(showArchaeologistPanel || selectedNode || selectedEdge) && (
           <div
             style={{
-              width: '320px',
-              backgroundColor: '#dfdfdf',
-              borderLeft: '2px groove #fff',
+              width: '380px',
+              minWidth: '340px',
+              maxWidth: '440px',
+              backgroundColor: '#f1f5f9',
+              borderLeft: '2px solid #cbd5e1',
               display: 'flex',
               flexDirection: 'column',
-              padding: '6px',
+              padding: '8px',
               boxSizing: 'border-box',
               overflowY: 'auto',
               fontSize: '11px',
               zIndex: 5,
+              boxShadow: '-2px 0 6px rgba(0,0,0,0.06)',
             }}
           >
-            {/* Header Finestra Laterale */}
+            {/* Titlebar Stile Windows Classica / Enterprise */}
             <div
               style={{
-                backgroundColor: '#000080',
-                color: '#fff',
-                padding: '4px 6px',
+                background: 'linear-gradient(90deg, #0a246a 0%, #1084d0 100%)',
+                color: '#ffffff',
+                padding: '5px 8px',
                 fontWeight: 'bold',
                 marginBottom: '6px',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
+                borderRadius: '3px',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 1px 2px rgba(0,0,0,0.15)',
               }}
             >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                <span>🎙️</span>
-                <span title={narration.headline}>{narration.headline}</span>
-                <span style={{ fontSize: '9px', opacity: 0.85, marginLeft: '2px' }}>Dettaglio Componente CAD</span>
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+                <span style={{ fontSize: '12px' }}>🎙️</span>
+                <span style={{ fontSize: '11px', letterSpacing: '0.3px', textShadow: '0 1px 1px rgba(0,0,0,0.3)', whiteSpace: 'nowrap' }}>
+                  L'Archeologo Spiega &amp; Risponde
+                </span>
+                <span
+                  style={{
+                    fontSize: '9px',
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    padding: '1px 5px',
+                    borderRadius: '2px',
+                    marginLeft: '2px',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Dettaglio Componente CAD
+                </span>
+              </div>
               <button
                 type="button"
                 onClick={() => {
@@ -1271,10 +1483,21 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                   setSelectedEdge(null)
                   setShowArchaeologistPanel(false)
                 }}
-                style={{ padding: '0 4px', fontSize: '10px', cursor: 'pointer', flexShrink: 0 }}
+                style={{
+                  padding: '1px 6px',
+                  fontSize: '11px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  backgroundColor: '#dc2626',
+                  color: '#ffffff',
+                  border: '1px solid #991b1b',
+                  borderRadius: '2px',
+                  lineHeight: '13px',
+                }}
                 title="Chiudi pannello laterale"
               >
-                X
+                ✕
               </button>
             </div>
 
@@ -1286,11 +1509,14 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                 style={{
                   flex: 1,
                   fontWeight: activeSideTab === 'archaeologist' ? 'bold' : 'normal',
-                  backgroundColor: activeSideTab === 'archaeologist' ? '#ffffff' : '#d4d0c8',
-                  border: '1px solid #808080',
-                  padding: '3px 4px',
+                  backgroundColor: activeSideTab === 'archaeologist' ? '#ffffff' : '#e2e8f0',
+                  color: activeSideTab === 'archaeologist' ? '#002277' : '#334155',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '3px',
+                  padding: '4px 6px',
                   cursor: 'pointer',
-                  fontSize: '10px',
+                  fontSize: '10.5px',
+                  boxShadow: activeSideTab === 'archaeologist' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
                 }}
               >
                 🎙️ Spiegazione Parlata
@@ -1302,11 +1528,14 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                   style={{
                     flex: 1,
                     fontWeight: activeSideTab === 'specs' ? 'bold' : 'normal',
-                    backgroundColor: activeSideTab === 'specs' ? '#ffffff' : '#d4d0c8',
-                    border: '1px solid #808080',
-                    padding: '3px 4px',
+                    backgroundColor: activeSideTab === 'specs' ? '#ffffff' : '#e2e8f0',
+                    color: activeSideTab === 'specs' ? '#002277' : '#334155',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '3px',
+                    padding: '4px 6px',
                     cursor: 'pointer',
-                    fontSize: '10px',
+                    fontSize: '10.5px',
+                    boxShadow: activeSideTab === 'specs' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
                   }}
                 >
                   📐 Specifiche CAD
@@ -1317,20 +1546,49 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
             {/* TAB: L'ARCHEOLOGO SPIEGA LE CONNESSIONI (Linguaggio Naturale) */}
             {activeSideTab === 'archaeologist' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-                {/* Badge di contesto */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span
-                    style={{
-                      fontSize: '9px',
-                      backgroundColor: '#000080',
-                      color: '#ffffff',
-                      padding: '2px 5px',
-                      borderRadius: '2px',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    {narration.badge}
-                  </span>
+                {/* Badge di contesto e bersaglio attivo */}
+                <div
+                  style={{
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '3px',
+                    padding: '6px 8px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <div style={{ overflow: 'hidden', minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontWeight: 'bold',
+                        fontSize: '11px',
+                        color: '#0f172a',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                      title={narration.headline}
+                    >
+                      {narration.headline}
+                    </div>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        fontSize: '9px',
+                        backgroundColor: '#002277',
+                        color: '#ffffff',
+                        padding: '1px 5px',
+                        borderRadius: '2px',
+                        fontWeight: 'bold',
+                        marginTop: '3px',
+                        letterSpacing: '0.4px',
+                      }}
+                    >
+                      {narration.badge}
+                    </span>
+                  </div>
                   {(selectedNode || selectedEdge) && (
                     <button
                       type="button"
@@ -1338,37 +1596,116 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                         setSelectedNodeId(null)
                         setSelectedEdge(null)
                       }}
-                      style={{ fontSize: '10px', padding: '1px 6px', cursor: 'pointer' }}
+                      style={{
+                        fontSize: '10px',
+                        fontWeight: '600',
+                        padding: '3px 8px',
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                        backgroundColor: '#f8fafc',
+                        border: '1px solid #94a3b8',
+                        borderRadius: '3px',
+                      }}
                     >
                       [Mappa Globale]
                     </button>
                   )}
                 </div>
 
+                {/* Striscia Metriche Architetturali */}
+                {narration.metrics && (
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: '4px',
+                      padding: '5px',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '3px',
+                      fontSize: '9.5px',
+                    }}
+                  >
+                    <div style={{ textAlign: 'center', padding: '2px' }}>
+                      <strong style={{ color: '#002277' }}>{narration.metrics.nodeCount}</strong> Nodi
+                    </div>
+                    <div style={{ textAlign: 'center', padding: '2px' }}>
+                      <strong style={{ color: '#002277' }}>{narration.metrics.edgeCount}</strong> Connessioni
+                    </div>
+                    <div style={{ textAlign: 'center', padding: '2px' }}>
+                      <strong style={{ color: '#006633' }}>{narration.metrics.servicesCount}</strong> Servizi
+                    </div>
+                    <div style={{ textAlign: 'center', padding: '2px' }}>
+                      <strong style={{ color: '#006633' }}>{narration.metrics.databaseCount}</strong> Database
+                    </div>
+                    <div style={{ textAlign: 'center', padding: '2px' }}>
+                      <strong style={{ color: '#994400' }}>{narration.metrics.batchCount}</strong> Worker
+                    </div>
+                    <div style={{ textAlign: 'center', padding: '2px' }}>
+                      Max Conn: <strong style={{ color: '#dc2626' }}>{narration.metrics.maxHubDegree}</strong>
+                    </div>
+                  </div>
+                )}
+
                 {/* Box Discorsivo Parlante Audio-Guida */}
                 <div
                   style={{
                     backgroundColor: '#ffffff',
-                    border: '1px solid #b0c4de',
-                    borderRadius: '2px',
-                    padding: '8px',
+                    border: '1px solid #cbd5e1',
+                    borderLeft: '4px solid #003399',
+                    borderRadius: '3px',
+                    padding: '10px',
                     fontSize: '11px',
-                    lineHeight: '1.55',
-                    color: '#1a1a2e',
-                    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.06)',
+                    lineHeight: '1.6',
+                    color: '#1e293b',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                   }}
                 >
-                  <div style={{ fontWeight: 'bold', color: '#000080', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span>💬</span>
-                    <em>L'Archeologo racconta:</em>
+                  <div
+                    style={{
+                      fontWeight: 'bold',
+                      color: '#002277',
+                      marginBottom: '6px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      borderBottom: '1px solid #f1f5f9',
+                      paddingBottom: '4px',
+                    }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <span>💬</span>
+                      <em>L'Archeologo racconta:</em>
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '8px',
+                        fontWeight: 'bold',
+                        backgroundColor: '#e0f2fe',
+                        color: '#0369a1',
+                        padding: '1px 5px',
+                        borderRadius: '10px',
+                        letterSpacing: '0.5px',
+                      }}
+                    >
+                      AUDIO-GUIDA
+                    </span>
                   </div>
                   <div style={{ whiteSpace: 'pre-line' }}>{narration.walkthrough}</div>
                 </div>
 
                 {/* Connessioni in Ingresso (Inflow) */}
                 {narration.inflow.length > 0 && (
-                  <fieldset style={{ margin: 0, padding: '6px' }}>
-                    <legend style={{ fontWeight: 'bold', color: '#000080' }}>
+                  <fieldset
+                    style={{
+                      margin: 0,
+                      padding: '6px 8px',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '3px',
+                    }}
+                  >
+                    <legend style={{ fontWeight: 'bold', color: '#002277', padding: '0 4px', fontSize: '10.5px' }}>
                       📥 Chiamate Ricevute (Inflow: {narration.inflow.length})
                     </legend>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -1376,17 +1713,18 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                         <div
                           key={idx}
                           style={{
-                            backgroundColor: '#f5f7fa',
-                            border: '1px solid #d4d0c8',
+                            backgroundColor: '#f8fafc',
+                            border: '1px solid #e2e8f0',
+                            borderLeft: '3px solid #003399',
                             padding: '4px 6px',
                             fontSize: '10px',
                             borderRadius: '2px',
                           }}
                         >
-                          <div style={{ fontWeight: 'bold', color: '#000080' }}>
-                            {inItem.connectedNodeTitle} <span style={{ fontWeight: 'normal', color: '#666' }}>[{inItem.connectedNodeCategory}]</span>
+                          <div style={{ fontWeight: 'bold', color: '#002277' }}>
+                            {inItem.connectedNodeTitle} <span style={{ fontWeight: 'normal', color: '#64748b' }}>[{inItem.connectedNodeCategory}]</span>
                           </div>
-                          <div style={{ color: '#333', marginTop: '1px' }}>{inItem.naturalExplanation}</div>
+                          <div style={{ color: '#334155', marginTop: '2px', lineHeight: '1.4' }}>{inItem.naturalExplanation}</div>
                         </div>
                       ))}
                     </div>
@@ -1395,8 +1733,16 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
 
                 {/* Connessioni in Uscita (Outflow) */}
                 {narration.outflow.length > 0 && (
-                  <fieldset style={{ margin: 0, padding: '6px' }}>
-                    <legend style={{ fontWeight: 'bold', color: '#006633' }}>
+                  <fieldset
+                    style={{
+                      margin: 0,
+                      padding: '6px 8px',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '3px',
+                    }}
+                  >
+                    <legend style={{ fontWeight: 'bold', color: '#006633', padding: '0 4px', fontSize: '10.5px' }}>
                       📤 Dipendenze a Valle (Outflow: {narration.outflow.length})
                     </legend>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -1404,17 +1750,18 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                         <div
                           key={idx}
                           style={{
-                            backgroundColor: '#f5fbf7',
-                            border: '1px solid #c8dcd0',
+                            backgroundColor: '#f8fafc',
+                            border: '1px solid #e2e8f0',
+                            borderLeft: '3px solid #059669',
                             padding: '4px 6px',
                             fontSize: '10px',
                             borderRadius: '2px',
                           }}
                         >
                           <div style={{ fontWeight: 'bold', color: '#006633' }}>
-                            {outItem.connectedNodeTitle} <span style={{ fontWeight: 'normal', color: '#666' }}>[{outItem.connectedNodeCategory}]</span>
+                            {outItem.connectedNodeTitle} <span style={{ fontWeight: 'normal', color: '#64748b' }}>[{outItem.connectedNodeCategory}]</span>
                           </div>
-                          <div style={{ color: '#333', marginTop: '1px' }}>{outItem.naturalExplanation}</div>
+                          <div style={{ color: '#334155', marginTop: '2px', lineHeight: '1.4' }}>{outItem.naturalExplanation}</div>
                         </div>
                       ))}
                     </div>
@@ -1424,41 +1771,53 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                 {/* Verdetto su Accoppiamento e Rischio */}
                 <div
                   style={{
-                    backgroundColor: '#fffbe6',
-                    border: '1px solid #ffe58f',
-                    padding: '6px 8px',
-                    borderRadius: '2px',
-                    fontSize: '10px',
-                    lineHeight: '1.45',
+                    backgroundColor: '#fffbeb',
+                    border: '1px solid #fde68a',
+                    borderLeft: '4px solid #d97706',
+                    padding: '8px 10px',
+                    borderRadius: '3px',
+                    fontSize: '10.5px',
+                    lineHeight: '1.5',
                   }}
                 >
-                  <div style={{ fontWeight: 'bold', color: '#874d00', marginBottom: '2px' }}>
-                    ⚡ Analisi di Accoppiamento:
+                  <div style={{ fontWeight: 'bold', color: '#92400e', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span>⚡</span>
+                    <span>Analisi di Accoppiamento:</span>
                   </div>
-                  <div>{narration.couplingInsight}</div>
+                  <div style={{ color: '#78350f' }}>{narration.couplingInsight}</div>
                 </div>
 
                 {/* Raccomandazione Archeologica */}
                 <div
                   style={{
-                    backgroundColor: '#e6f7ff',
-                    border: '1px solid #91d5ff',
-                    padding: '6px 8px',
-                    borderRadius: '2px',
-                    fontSize: '10px',
-                    lineHeight: '1.45',
+                    backgroundColor: '#f0f9ff',
+                    border: '1px solid #bae6fd',
+                    borderLeft: '4px solid #0284c7',
+                    padding: '8px 10px',
+                    borderRadius: '3px',
+                    fontSize: '10.5px',
+                    lineHeight: '1.5',
                   }}
                 >
-                  <div style={{ fontWeight: 'bold', color: '#0050b3', marginBottom: '2px' }}>
-                    💡 Consiglio di Modernizzazione:
+                  <div style={{ fontWeight: 'bold', color: '#0369a1', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span>💡</span>
+                    <span>Consiglio di Modernizzazione:</span>
                   </div>
-                  <div>{narration.recommendation}</div>
+                  <div style={{ color: '#0c4a6e' }}>{narration.recommendation}</div>
                 </div>
 
                 {/* Domande e Risposte Rapide */}
                 {narration.interactiveQuestions.length > 0 && (
-                  <fieldset style={{ margin: 0, padding: '6px' }}>
-                    <legend style={{ fontWeight: 'bold', color: '#333' }}>
+                  <fieldset
+                    style={{
+                      margin: 0,
+                      padding: '6px 8px',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '3px',
+                    }}
+                  >
+                    <legend style={{ fontWeight: 'bold', color: '#1e293b', padding: '0 4px', fontSize: '10.5px' }}>
                       ❓ Domande Frequenti su queste Connessioni
                     </legend>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -1466,17 +1825,18 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                         <div
                           key={idx}
                           style={{
-                            backgroundColor: '#ffffff',
-                            border: '1px solid #e0e0e0',
-                            padding: '5px 7px',
+                            backgroundColor: '#f8fafc',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '3px',
+                            padding: '6px 8px',
                             fontSize: '10px',
                           }}
                         >
-                          <div style={{ fontWeight: 'bold', color: '#800000', marginBottom: '2px' }}>
+                          <div style={{ fontWeight: 'bold', color: '#991b1b', marginBottom: '3px' }}>
                             Q: {q.question}
                           </div>
-                          <div style={{ color: '#222', lineHeight: '1.4' }}>
-                            <strong>R:</strong> {q.answer}
+                          <div style={{ color: '#1e293b', lineHeight: '1.45' }}>
+                            <strong style={{ color: '#0369a1' }}>R:</strong> {q.answer}
                           </div>
                         </div>
                       ))}
@@ -1490,11 +1850,15 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                     type="button"
                     onClick={() => onOpenAssemblyPath(selectedNode.assemblyPath!)}
                     style={{
-                      padding: '4px 8px',
+                      padding: '5px 8px',
                       fontWeight: 'bold',
                       cursor: 'pointer',
                       width: '100%',
                       marginTop: '4px',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #94a3b8',
+                      borderRadius: '3px',
+                      color: '#002277',
                     }}
                   >
                     Decompila Codice Assembly &gt;&gt;
@@ -1505,11 +1869,15 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                     type="button"
                     onClick={() => onSelectType(selectedNode.typeFullName!)}
                     style={{
-                      padding: '4px 8px',
+                      padding: '5px 8px',
                       fontWeight: 'bold',
                       cursor: 'pointer',
                       width: '100%',
                       marginTop: '4px',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #94a3b8',
+                      borderRadius: '3px',
+                      color: '#002277',
                     }}
                   >
                     Visualizza Classe nel Decompilatore &gt;&gt;

@@ -204,3 +204,77 @@ html, body {
 .status-bar-container {
   margin-top: 4px;
 }
+
+/* Stili di stampa e generazione PDF (A4 nativo per reportistica esecutiva) */
+@media print {
+  body, html, #root {
+    background: #ffffff !important;
+    color: #000000 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .main-window {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    background: #ffffff !important;
+  }
+
+  .title-bar,
+  .menu-bar,
+  .status-bar-container,
+  .no-print,
+  button,
+  .dialog-overlay {
+    display: none !important;
+  }
+
+  .executive-report-printable {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+  }
+
+  .executive-report-card {
+    border: 1px solid #999999 !important;
+    box-shadow: none !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 15px !important;
+    background-color: #ffffff !important;
+  }
+
+  .executive-report-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .executive-report-table th,
+  .executive-report-table td {
+    border: 1px solid #333333 !important;
+    padding: 6px 8px !important;
+    font-size: 9pt !important;
+  }
+
+  .executive-report-table th {
+    background-color: #f0f0f0 !important;
+    color: #000000 !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 15mm;
+  }
+}
+

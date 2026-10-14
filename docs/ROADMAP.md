@@ -159,15 +159,17 @@ Questo documento definisce le milestone di sviluppo di **.NET Archaeologist**, o
 
 ---
 
-## Milestone 5: Esportazione Report & Integrazione Evidenze REA
+## Milestone 5: Esportazione Report & Integrazione Evidenze REA (Stato: In Corso)
 **Obiettivo**: Fornire reportistica avanzata ed esportazione dei risultati per flussi assistiti da agenti AI.
 
-- [ ] Generatore di report tecnici esportabili in Markdown (panoramica architettura, elenco tipi critici, dipendenze esterne).
+- [x] Generatore di report tecnici esecutivi in linguaggio naturale con calcolo del debito architetturale (`ExecutiveReportGenerator`).
+- [x] Endpoint API dedicati `POST /api/solution/report` e `GET /api/assemblies/{sessionId}/report`.
+- [x] Interfaccia frontend per visualizzazione documento, stampa/salvataggio PDF nativo (A4 print-ready) e download Markdown (`.md`).
 - [ ] Supporto all'esportazione/importazione di *Evidence Bundles* compatibili con il protocollo di reverse engineering assistito (REA).
 - [ ] Documentazione su come condurre audit di sicurezza o analisi di debito tecnico tramite i report generati.
 
 **Criteri di verifica**:
-- Il report Markdown generato è immediatamente consultabile, valido sintatticamente e completo.
+- Il report Markdown e la stampa PDF sono immediatamente consultabili, validi sintatticamente e completi di sintesi narrativa e piani di modernizzazione.
 
 ---
 

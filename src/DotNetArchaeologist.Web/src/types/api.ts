@@ -188,3 +188,62 @@ export interface ArchitectureGraphDto {
   totalNodes: number
   totalEdges: number
 }
+
+export interface ReportServiceEntry {
+  serviceName: string
+  technology: string
+  contractInterface: string | null
+  endpointsCount: number
+  exposedEndpoints: string[]
+  migrationRecommendation: string
+}
+
+export interface ReportPersistenceEntry {
+  contextName: string
+  technology: string
+  tables: string[]
+  storedProcedures: string[]
+  architecturalImpact: string
+}
+
+export interface ReportBatchEntry {
+  workerName: string
+  entryPoint: string
+  triggers: string[]
+  containerizationRecommendation: string
+}
+
+export interface ReportRiskEntry {
+  category: string
+  title: string
+  severity: string
+  description: string
+  mitigation: string
+}
+
+export interface ModernizationStep {
+  phase: number
+  title: string
+  objective: string
+  details: string
+  complexity: string
+  riskLevel: string
+}
+
+export interface ExecutiveReport {
+  title: string
+  targetName: string
+  targetType: string
+  generatedAt: string
+  executiveSummary: string
+  techDebtScore: number
+  techDebtRating: string
+  architecturalStyle: string
+  keyFindings: string[]
+  serviceCatalog: ReportServiceEntry[]
+  dataPersistence: ReportPersistenceEntry[]
+  batchWorkers: ReportBatchEntry[]
+  identifiedRisks: ReportRiskEntry[]
+  modernizationRoadmap: ModernizationStep[]
+  markdownContent: string
+}

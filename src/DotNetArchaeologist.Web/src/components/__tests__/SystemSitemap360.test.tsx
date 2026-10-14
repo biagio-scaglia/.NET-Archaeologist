@@ -5,62 +5,62 @@ import type { SolutionDescriptor } from '../../types/api'
 
 describe('SystemSitemap360 Component', () => {
   const mockSolution: SolutionDescriptor = {
-    name: 'GestPdC',
-    solutionPath: 'C:\\cartella\\GestPdC.sln',
+    name: 'ContosoERP',
+    solutionPath: 'C:\\cartella\\ContosoERP.sln',
     totalProjects: 2,
     totalServices: 1,
     totalDatabases: 1,
     totalBatchWorkers: 1,
     projects: [
       {
-        name: 'GestPdC.Web',
-        projectPath: 'C:\\cartella\\GestPdC.Web\\GestPdC.Web.csproj',
-        relativePath: 'GestPdC.Web\\GestPdC.Web.csproj',
-        outputAssemblyPath: 'C:\\cartella\\GestPdC.Web\\bin\\GestPdC.Web.dll',
+        name: 'ContosoERP.Web',
+        projectPath: 'C:\\cartella\\ContosoERP.Web\\ContosoERP.Web.csproj',
+        relativePath: 'ContosoERP.Web\\ContosoERP.Web.csproj',
+        outputAssemblyPath: 'C:\\cartella\\ContosoERP.Web\\bin\\ContosoERP.Web.dll',
         assemblyExists: true,
         category: 'Web',
-        projectReferences: ['GestPdC.Service'],
+        projectReferences: ['ContosoERP.Service'],
         packageReferences: [],
         detectedTechnologies: ['ASP.NET MVC'],
       },
     ],
     services: [
       {
-        serviceName: 'WsGestPdcService',
-        projectName: 'GestPdC.Service',
+        serviceName: 'WsBillingService',
+        projectName: 'ContosoERP.Service',
         technology: 'WCF Service (SOAP)',
-        contractInterface: 'IWsGestPdcService',
-        implementationType: 'WsGestPdcService',
-        assemblyPath: 'C:\\cartella\\GestPdC.Service\\bin\\GestPdC.Service.dll',
+        contractInterface: 'IWsBillingService',
+        implementationType: 'WsBillingService',
+        assemblyPath: 'C:\\cartella\\ContosoERP.Service\\bin\\ContosoERP.Service.dll',
         endpoints: [
           {
-            name: 'NotificaPratica',
+            name: 'ProcessInvoice',
             httpMethodOrContract: 'SOAP Action',
-            routeOrAction: 'NotificaPratica',
+            routeOrAction: 'ProcessInvoice',
             returnType: 'bool',
-            parameters: ['int praticaId'],
+            parameters: ['int invoiceId'],
           },
         ],
       },
     ],
     databases: [
       {
-        name: 'GestPdCObjectContext',
-        projectName: 'GestPdC.Data',
+        name: 'ContosoErpDbContext',
+        projectName: 'ContosoERP.Data',
         technology: 'Entity Framework',
         baseTypeOrPattern: 'ObjectContext',
-        assemblyPath: 'C:\\cartella\\GestPdC.Data\\bin\\GestPdC.Data.dll',
-        entitiesOrTables: ['Pratiche', 'Utenti'],
-        detectedStoredProceduresOrQueries: ['sp_InserisciNotifica'],
+        assemblyPath: 'C:\\cartella\\ContosoERP.Data\\bin\\ContosoERP.Data.dll',
+        entitiesOrTables: ['Invoices', 'Customers'],
+        detectedStoredProceduresOrQueries: ['sp_InsertInvoice'],
       },
     ],
     batchWorkers: [
       {
-        workerName: 'GestPdcBatch',
-        projectName: 'GestPdcBatch',
+        workerName: 'BillingBatchWorker',
+        projectName: 'BillingBatchWorker',
         technology: 'Console Batch Worker',
         entryPointOrJobClass: 'Program',
-        assemblyPath: 'C:\\cartella\\GestPdcBatch\\bin\\GestPdcBatch.exe',
+        assemblyPath: 'C:\\cartella\\BillingBatchWorker\\bin\\BillingBatchWorker.exe',
         triggersOrSchedules: ['Console EntryPoint (Main)'],
       },
     ],
@@ -102,7 +102,7 @@ describe('SystemSitemap360 Component', () => {
 
     const apiBtn = screen.getByRole('button', { name: /\[Catalogo Contratti & API\]/i })
     fireEvent.click(apiBtn)
-    expect(screen.getAllByText(/IWsGestPdcService/i).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/IWsBillingService/i).length).toBeGreaterThan(0)
   })
 
   it('filters items when typing into search box and updates detail panel', () => {
@@ -117,19 +117,19 @@ describe('SystemSitemap360 Component', () => {
     )
 
     const searchInput = screen.getByPlaceholderText(/Cerca pagina, servizio, tabella/i)
-    fireEvent.change(searchInput, { target: { value: 'WsGest' } })
+    fireEvent.change(searchInput, { target: { value: 'WsBilling' } })
 
-    expect(screen.getAllByText(/WsGestPdcService/i).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/WsBillingService/i).length).toBeGreaterThan(0)
     expect(screen.getByText(/Visione a 360° del Componente/i)).toBeInTheDocument()
 
     // Seleziona esplicitamente il blocco del servizio
-    const svcCard = screen.getByText(/\[SVC\] WsGestPdcService/)
+    const svcCard = screen.getByText(/\[SVC\] WsBillingService/)
     fireEvent.click(svcCard)
 
     // Clicca sul pulsante di decompilazione codice
     const decompileBtn = screen.getByRole('button', { name: /Decompila e Ispeziona Codice/i })
     fireEvent.click(decompileBtn)
-    expect(handleOpen).toHaveBeenCalledWith('C:\\cartella\\GestPdC.Service\\bin\\GestPdC.Service.dll')
+    expect(handleOpen).toHaveBeenCalledWith('C:\\cartella\\ContosoERP.Service\\bin\\ContosoERP.Service.dll')
 
     // Clicca sul pulsante Chiudi Mappa
     const closeBtn = screen.getByRole('button', { name: /Chiudi Mappa/i })

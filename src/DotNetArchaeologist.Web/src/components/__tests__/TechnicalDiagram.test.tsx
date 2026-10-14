@@ -5,62 +5,62 @@ import type { SolutionDescriptor } from '../../types/api'
 
 describe('TechnicalDiagram Component', () => {
   const mockSolution: SolutionDescriptor = {
-    name: 'GestPdC',
-    solutionPath: 'C:\\cartella\\GestPdC.sln',
+    name: 'ContosoERP',
+    solutionPath: 'C:\\cartella\\ContosoERP.sln',
     totalProjects: 2,
     totalServices: 1,
     totalDatabases: 1,
     totalBatchWorkers: 1,
     projects: [
       {
-        name: 'GestPdC.Web',
-        projectPath: 'C:\\cartella\\GestPdC.Web\\GestPdC.Web.csproj',
-        relativePath: 'GestPdC.Web\\GestPdC.Web.csproj',
-        outputAssemblyPath: 'C:\\cartella\\GestPdC.Web\\bin\\GestPdC.Web.dll',
+        name: 'ContosoERP.Web',
+        projectPath: 'C:\\cartella\\ContosoERP.Web\\ContosoERP.Web.csproj',
+        relativePath: 'ContosoERP.Web\\ContosoERP.Web.csproj',
+        outputAssemblyPath: 'C:\\cartella\\ContosoERP.Web\\bin\\ContosoERP.Web.dll',
         assemblyExists: true,
         category: 'Web',
-        projectReferences: ['GestPdC.Service'],
+        projectReferences: ['ContosoERP.Service'],
         packageReferences: [],
         detectedTechnologies: ['ASP.NET MVC'],
       },
     ],
     services: [
       {
-        serviceName: 'WsGestPdcService',
-        projectName: 'GestPdC.Service',
+        serviceName: 'WsBillingService',
+        projectName: 'ContosoERP.Service',
         technology: 'WCF Service (SOAP)',
-        contractInterface: 'IWsGestPdcService',
-        implementationType: 'WsGestPdcService',
-        assemblyPath: 'C:\\cartella\\GestPdC.Service\\bin\\GestPdC.Service.dll',
+        contractInterface: 'IWsBillingService',
+        implementationType: 'WsBillingService',
+        assemblyPath: 'C:\\cartella\\ContosoERP.Service\\bin\\ContosoERP.Service.dll',
         endpoints: [
           {
-            name: 'NotificaPratica',
+            name: 'ProcessInvoice',
             httpMethodOrContract: 'SOAP Action',
-            routeOrAction: 'NotificaPratica',
+            routeOrAction: 'ProcessInvoice',
             returnType: 'bool',
-            parameters: ['int praticaId'],
+            parameters: ['int invoiceId'],
           },
         ],
       },
     ],
     databases: [
       {
-        name: 'GestPdCObjectContext',
-        projectName: 'GestPdC.Data',
+        name: 'ContosoErpDbContext',
+        projectName: 'ContosoERP.Data',
         technology: 'Entity Framework',
         baseTypeOrPattern: 'ObjectContext',
-        assemblyPath: 'C:\\cartella\\GestPdC.Data\\bin\\GestPdC.Data.dll',
-        entitiesOrTables: ['Pratiche', 'Utenti'],
-        detectedStoredProceduresOrQueries: ['sp_InserisciNotifica'],
+        assemblyPath: 'C:\\cartella\\ContosoERP.Data\\bin\\ContosoERP.Data.dll',
+        entitiesOrTables: ['Invoices', 'Customers'],
+        detectedStoredProceduresOrQueries: ['sp_InsertInvoice'],
       },
     ],
     batchWorkers: [
       {
-        workerName: 'GestPdcBatch',
-        projectName: 'GestPdcBatch',
+        workerName: 'BillingBatchWorker',
+        projectName: 'BillingBatchWorker',
         technology: 'Console Batch Worker',
         entryPointOrJobClass: 'Program',
-        assemblyPath: 'C:\\cartella\\GestPdcBatch\\bin\\GestPdcBatch.exe',
+        assemblyPath: 'C:\\cartella\\BillingBatchWorker\\bin\\BillingBatchWorker.exe',
         triggersOrSchedules: ['Console EntryPoint (Main)'],
       },
     ],
@@ -78,9 +78,9 @@ describe('TechnicalDiagram Component', () => {
     )
 
     expect(screen.getByText(/\[DISEGNO TECNICO ARCHITETTURALE\]/i)).toBeInTheDocument()
-    expect(screen.getByText('WsGestPdcService')).toBeInTheDocument()
-    expect(screen.getByText('GestPdCObjectContext')).toBeInTheDocument()
-    expect(screen.getByText('GestPdcBatch')).toBeInTheDocument()
+    expect(screen.getByText('WsBillingService')).toBeInTheDocument()
+    expect(screen.getByText('ContosoErpDbContext')).toBeInTheDocument()
+    expect(screen.getByText('BillingBatchWorker')).toBeInTheDocument()
   })
 
   it('changes zoom level when zoom buttons are clicked', () => {
@@ -112,7 +112,7 @@ describe('TechnicalDiagram Component', () => {
       />
     )
 
-    const svcNode = screen.getByText('WsGestPdcService')
+    const svcNode = screen.getByText('WsBillingService')
     fireEvent.click(svcNode)
 
     expect(screen.getByText('Dettaglio Componente CAD')).toBeInTheDocument()
@@ -130,7 +130,7 @@ describe('TechnicalDiagram Component', () => {
     )
 
     const searchInput = screen.getByPlaceholderText('Nome tipo...')
-    fireEvent.change(searchInput, { target: { value: 'WsGest' } })
+    fireEvent.change(searchInput, { target: { value: 'WsBilling' } })
 
     expect(screen.getByText('(2)')).toBeInTheDocument()
   })
@@ -142,7 +142,7 @@ describe('TechnicalDiagram Component', () => {
       <TechnicalDiagram
         solution={mockSolution}
         assembly={null}
-        selectedTypeFullName="WsGestPdcService"
+        selectedTypeFullName="WsBillingService"
         onOpenAssemblyPath={handleOpen}
         onSelectType={handleSelectType}
       />
@@ -167,8 +167,8 @@ describe('TechnicalDiagram Component', () => {
 
     // Verifica che il pulsante sia diventato "Torna a Mappa Sistema"
     expect(screen.getByRole('button', { name: /Torna a Mappa Sistema/i })).toBeInTheDocument()
-    // Verifica che il progetto GestPdC.Web sia renderizzato
-    expect(screen.getByText('GestPdC.Web')).toBeInTheDocument()
+    // Verifica che il progetto ContosoERP.Web sia renderizzato
+    expect(screen.getByText('ContosoERP.Web')).toBeInTheDocument()
     // Verifica che il conteggio non sia 0
     expect(screen.queryByText(/Tutti i Componenti \(0\)/i)).not.toBeInTheDocument()
   })
@@ -186,10 +186,10 @@ describe('TechnicalDiagram Component', () => {
     const filterSelect = screen.getByDisplayValue(/Tutti i Componenti/i)
     fireEvent.change(filterSelect, { target: { value: 'classes' } })
 
-    // WsGestPdcService deve essere visibile come classe/servizio
-    expect(screen.getByText('WsGestPdcService')).toBeInTheDocument()
+    // WsBillingService deve essere visibile come classe/servizio
+    expect(screen.getByText('WsBillingService')).toBeInTheDocument()
     // Database e interfacce non devono apparire nel filtro solo classi
-    expect(screen.queryByText('GestPdCObjectContext')).not.toBeInTheDocument()
+    expect(screen.queryByText('ContosoErpDbContext')).not.toBeInTheDocument()
   })
 
   it('filters and displays contract interfaces when selecting interfaces filter', () => {
@@ -205,9 +205,9 @@ describe('TechnicalDiagram Component', () => {
     const filterSelect = screen.getByDisplayValue(/Tutti i Componenti/i)
     fireEvent.change(filterSelect, { target: { value: 'interfaces' } })
 
-    // L'interfaccia IWsGestPdcService deve essere presente
-    expect(screen.getByText('IWsGestPdcService')).toBeInTheDocument()
+    // L'interfaccia IWsBillingService deve essere presente
+    expect(screen.getByText('IWsBillingService')).toBeInTheDocument()
     // Il database o il batch non devono apparire
-    expect(screen.queryByText('GestPdCObjectContext')).not.toBeInTheDocument()
+    expect(screen.queryByText('ContosoErpDbContext')).not.toBeInTheDocument()
   })
 })

@@ -7,6 +7,7 @@ using System.Reflection.PortableExecutable;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNetArchaeologist.Analysis.Engines;
+using DotNetArchaeologist.Analysis.Reporting;
 using DotNetArchaeologist.Api.Services;
 using DotNetArchaeologist.Core.Contracts;
 using DotNetArchaeologist.Core.Domain;
@@ -43,6 +44,7 @@ builder.Services.AddSingleton<IAssemblyInspector, MetadataAssemblyInspector>();
 builder.Services.AddSingleton<IDecompilerService, CSharpDecompilerService>();
 builder.Services.AddSingleton<IArchitectureGraphBuilder, ArchitectureGraphBuilder>();
 builder.Services.AddSingleton<ISolutionInspector, SolutionInspector>();
+builder.Services.AddSingleton<IExecutiveReportGenerator, ExecutiveReportGenerator>();
 builder.Services.AddSingleton<IAssemblySessionStore, InMemoryAssemblySessionStore>();
 
 // Configurazione serializzazione JSON HTTP (converte gli enum in stringhe descrittive)
@@ -377,6 +379,57 @@ app.MapPost("/api/solution/inspect", async (
     {
         return Results.BadRequest(new { error = $"Errore durante l'ispezione della solution: {ex.Message}" });
     }
+});
+
+// Generazione Report Esecutivo per Solution
+app.MapPost("/api/solution/report", async (
+    InspectSolutionRequest request,
+    ISolutionInspector solutionInspector,
+    IExecutiveReportGenerator reportGenerator,
+    CancellationToken ct) =>
+{
+    var validation = LocalPathSecurityValidator.ValidateSolutionOrFolderPath(request.SolutionOrFolderPath);
+    if (!validation.IsValid)
+    {
+        return Results.Json(new { error = validation.ErrorMessage }, statusCode: validation.StatusCode);
+    }
+
+    var validatedPath = validation.NormalizedPath!;
+
+    try
+    {
+        var solution = await solutionInspector.InspectSolutionAsync(validatedPath, ct);
+        var report = reportGenerator.GenerateReport(solution);
+        return Results.Ok(report);
+    }
+    catch (FileNotFoundException ex)
+    {
+        return Results.NotFound(new { error = ex.Message });
+    }
+    catch (UnauthorizedAccessException)
+    {
+        return Results.Json(new { error = $"Accesso negato durante la lettura della solution o dei progetti: '{validatedPath}'." }, statusCode: StatusCodes.Status403Forbidden);
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { error = $"Errore durante la generazione del report della solution: {ex.Message}" });
+    }
+});
+
+// Generazione Report Esecutivo per singolo Assembly in sessione
+app.MapGet("/api/assemblies/{sessionId}/report", (
+    string sessionId,
+    IAssemblySessionStore sessionStore,
+    IExecutiveReportGenerator reportGenerator) =>
+{
+    var descriptor = sessionStore.GetDescriptor(sessionId);
+    if (descriptor == null)
+    {
+        return Results.NotFound(new { error = $"Sessione assembly '{sessionId}' non trovata." });
+    }
+
+    var report = reportGenerator.GenerateReport(descriptor);
+    return Results.Ok(report);
 });
 
 app.Run();

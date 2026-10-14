@@ -180,4 +180,48 @@ public sealed class AssemblyApiTests : IClassFixture<WebApplicationFactory<Progr
         var response = await _client.PostAsync("/api/solution/inspect", content);
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
+
+    [Fact]
+    public async Task GetReport_ReturnsOkAndExecutiveReport_ForValidSession()
+    {
+        await using var assemblyStream = TestAssemblyGenerator.CreateAssemblyStream("public class CustomerModule { }", "CustomerModule");
+        using var multipart = new MultipartFormDataContent();
+        using var fileContent = new ByteArrayContent(assemblyStream.ToArray());
+        fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
+        multipart.Add(fileContent, "file", "CustomerModule.dll");
+
+        var inspectResponse = await _client.PostAsync("/api/assemblies/inspect", multipart);
+        Assert.Equal(HttpStatusCode.OK, inspectResponse.StatusCode);
+        var inspectJson = JsonDocument.Parse(await inspectResponse.Content.ReadAsStringAsync());
+        var sessionId = inspectJson.RootElement.GetProperty("sessionId").GetString()!;
+
+        var reportResponse = await _client.GetAsync($"/api/assemblies/{sessionId}/report");
+        Assert.Equal(HttpStatusCode.OK, reportResponse.StatusCode);
+
+        var reportJson = JsonDocument.Parse(await reportResponse.Content.ReadAsStringAsync());
+        Assert.Equal("CustomerModule", reportJson.RootElement.GetProperty("targetName").GetString());
+        Assert.Equal("Assembly", reportJson.RootElement.GetProperty("targetType").GetString());
+        Assert.True(reportJson.RootElement.GetProperty("techDebtScore").GetInt32() > 0);
+        Assert.NotNull(reportJson.RootElement.GetProperty("executiveSummary").GetString());
+        Assert.NotNull(reportJson.RootElement.GetProperty("markdownContent").GetString());
+    }
+
+    [Fact]
+    public async Task GetReport_ReturnsNotFound_ForUnknownSession()
+    {
+        var response = await _client.GetAsync("/api/assemblies/unknown-session-report/report");
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SolutionReport_ReturnsNotFound_WhenPathDoesNotExist()
+    {
+        var content = new StringContent(
+            JsonSerializer.Serialize(new { solutionOrFolderPath = @"C:\Fake\NonExistentPath.sln" }),
+            System.Text.Encoding.UTF8,
+            "application/json");
+
+        var response = await _client.PostAsync("/api/solution/report", content);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
 }

@@ -5,29 +5,29 @@ import type { SolutionDescriptor } from '../../types/api'
 
 describe('SolutionOverview Component', () => {
   const mockSolution: SolutionDescriptor = {
-    name: 'GestPdC',
-    solutionPath: 'C:\\cartella\\GestPdC.sln',
+    name: 'ContosoERP',
+    solutionPath: 'C:\\cartella\\ContosoERP.sln',
     totalProjects: 2,
     totalServices: 1,
     totalDatabases: 1,
     totalBatchWorkers: 1,
     projects: [
       {
-        name: 'GestPdC.Service',
-        projectPath: 'C:\\cartella\\GestPdC.Service\\GestPdC.Service.csproj',
-        relativePath: 'GestPdC.Service\\GestPdC.Service.csproj',
-        outputAssemblyPath: 'C:\\cartella\\GestPdC.Service\\bin\\GestPdC.Service.dll',
+        name: 'ContosoERP.Service',
+        projectPath: 'C:\\cartella\\ContosoERP.Service\\ContosoERP.Service.csproj',
+        relativePath: 'ContosoERP.Service\\ContosoERP.Service.csproj',
+        outputAssemblyPath: 'C:\\cartella\\ContosoERP.Service\\bin\\ContosoERP.Service.dll',
         assemblyExists: true,
         category: 'Service',
-        projectReferences: ['GestPdC.Common'],
+        projectReferences: ['ContosoERP.Common'],
         packageReferences: ['System.ServiceModel'],
         detectedTechnologies: ['WCF Service (SOAP)'],
       },
       {
-        name: 'GestPdC.Data',
-        projectPath: 'C:\\cartella\\GestPdC.Data\\GestPdC.Data.csproj',
-        relativePath: 'GestPdC.Data\\GestPdC.Data.csproj',
-        outputAssemblyPath: 'C:\\cartella\\GestPdC.Data\\bin\\GestPdC.Data.dll',
+        name: 'ContosoERP.Data',
+        projectPath: 'C:\\cartella\\ContosoERP.Data\\ContosoERP.Data.csproj',
+        relativePath: 'ContosoERP.Data\\ContosoERP.Data.csproj',
+        outputAssemblyPath: 'C:\\cartella\\ContosoERP.Data\\bin\\ContosoERP.Data.dll',
         assemblyExists: true,
         category: 'Database',
         projectReferences: [],
@@ -37,41 +37,41 @@ describe('SolutionOverview Component', () => {
     ],
     services: [
       {
-        serviceName: 'WsGestPdcService',
-        projectName: 'GestPdC.Service',
+        serviceName: 'WsBillingService',
+        projectName: 'ContosoERP.Service',
         technology: 'WCF Service (SOAP)',
-        contractInterface: 'IWsGestPdcService',
-        implementationType: 'WsGestPdcService',
-        assemblyPath: 'C:\\cartella\\GestPdC.Service\\bin\\GestPdC.Service.dll',
+        contractInterface: 'IWsBillingService',
+        implementationType: 'WsBillingService',
+        assemblyPath: 'C:\\cartella\\ContosoERP.Service\\bin\\ContosoERP.Service.dll',
         endpoints: [
           {
-            name: 'NotificaPratica',
+            name: 'ProcessInvoice',
             httpMethodOrContract: 'SOAP Action',
-            routeOrAction: 'NotificaPratica',
+            routeOrAction: 'ProcessInvoice',
             returnType: 'bool',
-            parameters: ['int praticaId', 'string payload'],
+            parameters: ['int invoiceId', 'string payload'],
           },
         ],
       },
     ],
     databases: [
       {
-        name: 'GestPdCObjectContext',
-        projectName: 'GestPdC.Data',
+        name: 'ContosoErpDbContext',
+        projectName: 'ContosoERP.Data',
         technology: 'Entity Framework ObjectContext/DbContext',
         baseTypeOrPattern: 'ObjectContext',
-        assemblyPath: 'C:\\cartella\\GestPdC.Data\\bin\\GestPdC.Data.dll',
-        entitiesOrTables: ['Pratiche', 'Utenti', 'Documenti'],
-        detectedStoredProceduresOrQueries: ['sp_InserisciNotifica', 'usp_GetPratica'],
+        assemblyPath: 'C:\\cartella\\ContosoERP.Data\\bin\\ContosoERP.Data.dll',
+        entitiesOrTables: ['Invoices', 'Customers', 'Documents'],
+        detectedStoredProceduresOrQueries: ['sp_InsertInvoice', 'usp_GetCustomer'],
       },
     ],
     batchWorkers: [
       {
-        workerName: 'GestPdcBatch',
-        projectName: 'GestPdcBatch',
+        workerName: 'BillingBatchWorker',
+        projectName: 'BillingBatchWorker',
         technology: 'Console Batch Job / Worker',
-        entryPointOrJobClass: 'GestPdcBatch.Program',
-        assemblyPath: 'C:\\cartella\\GestPdcBatch\\bin\\GestPdcBatch.exe',
+        entryPointOrJobClass: 'BillingBatchWorker.Program',
+        assemblyPath: 'C:\\cartella\\BillingBatchWorker\\bin\\BillingBatchWorker.exe',
         triggersOrSchedules: ['Console EntryPoint (Main)'],
       },
     ],
@@ -90,9 +90,9 @@ describe('SolutionOverview Component', () => {
       />
     )
 
-    expect(screen.getByText(/Mappa Architetturale Sistema: GestPdC.sln/i)).toBeInTheDocument()
-    expect(screen.getAllByText('WsGestPdcService').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText(/NotificaPratica/i)).toBeInTheDocument()
+    expect(screen.getByText(/Mappa Architetturale Sistema: ContosoERP.sln/i)).toBeInTheDocument()
+    expect(screen.getAllByText('WsBillingService').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText(/ProcessInvoice/i)).toBeInTheDocument()
   })
 
   it('switches to databases tab and displays tables and stored procedures', () => {
@@ -110,9 +110,9 @@ describe('SolutionOverview Component', () => {
     const dbTab = screen.getByText(/Database & Persistenza/i)
     fireEvent.click(dbTab)
 
-    expect(screen.getAllByText('GestPdCObjectContext').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText('[TBL] Pratiche')).toBeInTheDocument()
-    expect(screen.getByText('[PROC] sp_InserisciNotifica')).toBeInTheDocument()
+    expect(screen.getAllByText('ContosoErpDbContext').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('[TBL] Invoices')).toBeInTheDocument()
+    expect(screen.getByText('[PROC] sp_InsertInvoice')).toBeInTheDocument()
   })
 
   it('invokes onOpenAssemblyPath when Decompila Assembly button is clicked', () => {
@@ -130,6 +130,6 @@ describe('SolutionOverview Component', () => {
     const decompileBtn = screen.getByRole('button', { name: /Decompila Assembly/i })
     fireEvent.click(decompileBtn)
 
-    expect(handleOpen).toHaveBeenCalledWith('C:\\cartella\\GestPdC.Service\\bin\\GestPdC.Service.dll')
+    expect(handleOpen).toHaveBeenCalledWith('C:\\cartella\\ContosoERP.Service\\bin\\ContosoERP.Service.dll')
   })
 })

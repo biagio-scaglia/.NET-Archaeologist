@@ -2,7 +2,13 @@ import win98Css from '98.css/dist/98.css?inline'
 import xpCss from 'xp.css/dist/XP.css?inline'
 import win7Css from '7.css/dist/7.css?inline'
 
-export type RetroTheme = 'win98' | 'winxp' | 'win7'
+export const RETRO_THEMES = ['win98', 'winxp', 'win7'] as const
+export type RetroTheme = (typeof RETRO_THEMES)[number]
+export const RetroTheme = {
+  Win98: 'win98' as const,
+  WinXP: 'winxp' as const,
+  Win7: 'win7' as const
+}
 
 export interface ThemeConfig {
   id: RetroTheme

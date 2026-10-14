@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { THEMES, RetroTheme, ThemeConfig } from './themes'
+import React, { createContext, useContext, useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
+import { THEMES } from './themes'
+import type { RetroTheme, ThemeConfig } from './themes'
 
 interface ThemeContextType {
   theme: RetroTheme

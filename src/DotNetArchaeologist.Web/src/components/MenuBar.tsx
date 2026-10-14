@@ -1,4 +1,5 @@
 import React from 'react'
+import { useRetroTheme } from '../theme/ThemeContext'
 
 interface MenuBarProps {
   onOpenClick: () => void
@@ -11,8 +12,10 @@ export const MenuBar: React.FC<MenuBarProps> = ({
   onResetClick,
   onAboutClick
 }) => {
+  const { theme, setTheme } = useRetroTheme()
+
   return (
-    <div className="menu-bar">
+    <div className="menu-bar" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
       <div className="menu-item" onClick={onOpenClick}>
         <u>F</u>ile - Apri Assembly...
       </div>
@@ -21,6 +24,62 @@ export const MenuBar: React.FC<MenuBarProps> = ({
       </div>
       <div className="menu-item" onClick={onAboutClick}>
         <u>G</u>uida - Info
+      </div>
+
+      {/* Selettore Tema Retro OS */}
+      <div
+        className="no-print"
+        style={{
+          marginLeft: 'auto',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '3px',
+          paddingRight: '4px'
+        }}
+      >
+        <span style={{ fontSize: '10px', opacity: 0.85, marginRight: '2px' }}>Tema OS:</span>
+        <button
+          type="button"
+          onClick={() => setTheme('win98')}
+          title="Attiva stile classico Windows 98 (98.css)"
+          style={{
+            fontWeight: theme === 'win98' ? 'bold' : 'normal',
+            fontSize: '10px',
+            padding: '1px 5px',
+            height: '19px',
+            cursor: 'pointer'
+          }}
+        >
+          Win98
+        </button>
+        <button
+          type="button"
+          onClick={() => setTheme('winxp')}
+          title="Attiva stile moderno Windows XP Luna (xp.css)"
+          style={{
+            fontWeight: theme === 'winxp' ? 'bold' : 'normal',
+            fontSize: '10px',
+            padding: '1px 5px',
+            height: '19px',
+            cursor: 'pointer'
+          }}
+        >
+          WinXP
+        </button>
+        <button
+          type="button"
+          onClick={() => setTheme('win7')}
+          title="Attiva stile Aero Glass Windows 7 (7.css)"
+          style={{
+            fontWeight: theme === 'win7' ? 'bold' : 'normal',
+            fontSize: '10px',
+            padding: '1px 5px',
+            height: '19px',
+            cursor: 'pointer'
+          }}
+        >
+          Win7
+        </button>
       </div>
     </div>
   )

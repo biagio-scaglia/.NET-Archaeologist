@@ -1,13 +1,13 @@
-@import "98.css";
+/* Il tema retro attivo (98.css, xp.css o 7.css) viene iniettato dinamicamente da ThemeProvider */
 
-/* Reset e configurazione base desktop Windows 98 */
+/* Reset e configurazione base desktop per retro OS (Windows 98, XP, 7) */
 html, body {
   margin: 0;
   padding: 0;
   height: 100%;
   width: 100%;
   overflow: hidden;
-  background-color: #008080; /* Teal classico di Windows 98 */
+  background-color: #008080; /* Teal classico di default per Win98, aggiornato da ThemeProvider */
   font-family: "MS Sans Serif", Arial, sans-serif;
   font-size: 11px;
   user-select: none;

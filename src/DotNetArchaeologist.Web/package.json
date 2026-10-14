@@ -11,9 +11,11 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "7.css": "^0.21.1",
     "98.css": "^0.1.21",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "xp.css": "^0.2.6"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",

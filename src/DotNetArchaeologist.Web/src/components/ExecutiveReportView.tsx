@@ -34,6 +34,25 @@ export const ExecutiveReportView: React.FC<ExecutiveReportViewProps> = ({
     URL.revokeObjectURL(url)
   }
 
+  const handleDownloadEvidenceBundle = () => {
+    if (!report) return
+    const bundle = {
+      format: 'DotNetArchaeologist.EvidenceBundle',
+      version: '1.0.0',
+      exportedAtUtc: new Date().toISOString(),
+      report
+    }
+    const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `EvidenceBundle_${report.targetName.replace(/[^a-zA-Z0-9_-]/g, '_')}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
   const handleCopyClipboard = async () => {
     if (!report) return
     try {
@@ -144,6 +163,13 @@ export const ExecutiveReportView: React.FC<ExecutiveReportViewProps> = ({
             title="Scarica il report come file Markdown standard (.md)"
           >
             [Scarica .md]
+          </button>
+          <button
+            type="button"
+            onClick={handleDownloadEvidenceBundle}
+            title="Esporta il fascicolo evidenze strutturato (.json) per strumenti di reverse engineering"
+          >
+            [Evidence Bundle .json]
           </button>
           <button
             type="button"

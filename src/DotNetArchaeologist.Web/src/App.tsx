@@ -24,6 +24,7 @@ export const App: React.FC = () => {
   const [namespaces, setNamespaces] = useState<TreeNamespaceGroup[]>([])
   const [selectedTypeFullName, setSelectedTypeFullName] = useState<string | null>(null)
   const [decompiledCode, setDecompiledCode] = useState<string>('')
+  const decompileCacheRef = React.useRef<Map<string, string>>(new Map())
   
   const [loading, setLoading] = useState<boolean>(false)
   const [decompileLoading, setDecompileLoading] = useState<boolean>(false)
@@ -156,17 +157,27 @@ export const App: React.FC = () => {
     }
   }
 
-  // Seleziona un tipo e richiede la decompilazione C#
+  // Seleziona un tipo e richiede la decompilazione C# con cache in-memory istantanea
   const handleSelectType = async (fullName: string) => {
     if (!sessionId) return
     setSelectedTypeFullName(fullName)
+
+    const cacheKey = `${sessionId}:${fullName}`
+    if (decompileCacheRef.current.has(cacheKey)) {
+      setDecompiledCode(decompileCacheRef.current.get(cacheKey)!)
+      setStatusMessage(`Decompilato (da cache): ${fullName}`)
+      return
+    }
+
     setDecompileLoading(true)
     setStatusMessage(`Decompilazione tipo: ${fullName}...`)
     try {
       const res = await fetch(`/api/assemblies/${sessionId}/decompile?type=${encodeURIComponent(fullName)}`)
       if (res.ok) {
         const decompileData = await res.json()
-        setDecompiledCode(decompileData.code || '// Nessun codice sorgente disponibile.')
+        const code = decompileData.code || '// Nessun codice sorgente disponibile.'
+        decompileCacheRef.current.set(cacheKey, code)
+        setDecompiledCode(code)
         setStatusMessage(`Decompilato: ${fullName}`)
       } else {
         setDecompiledCode(`// Errore durante la decompilazione del tipo: ${fullName}`)
@@ -296,6 +307,7 @@ export const App: React.FC = () => {
   }
 
   const handleReset = () => {
+    decompileCacheRef.current.clear()
     setSolution(null)
     setSessionId(null)
     setAssembly(null)

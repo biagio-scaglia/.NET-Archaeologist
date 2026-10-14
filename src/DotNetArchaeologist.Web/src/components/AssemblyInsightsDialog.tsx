@@ -90,6 +90,79 @@ export const AssemblyInsightsDialog: React.FC<AssemblyInsightsDialogProps> = ({
     }
   }
 
+  // Helpers per esportazione dati
+  const downloadBlob = (filename: string, content: string, mimeType: string) => {
+    try {
+      if (typeof window === 'undefined') return
+      const blob = new Blob([content], { type: mimeType })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Download fallito', err)
+    }
+  }
+
+  const escapeCsvCell = (cell: string | number): string => {
+    const str = String(cell ?? '')
+    if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+      return `"${str.replace(/"/g, '""')}"`
+    }
+    return str
+  }
+
+  const exportStringsJson = () => {
+    const payload = {
+      assembly: assembly?.name || 'unknown',
+      totalCount: filteredStrings.length,
+      category: stringCategory,
+      exportedAt: new Date().toISOString(),
+      strings: filteredStrings
+    }
+    downloadBlob(`${assembly?.name || 'assembly'}_strings.json`, JSON.stringify(payload, null, 2), 'application/json')
+  }
+
+  const exportStringsCsv = () => {
+    const headers = ['Categoria', 'Valore']
+    const rows = filteredStrings.map(s => [escapeCsvCell(s.category), escapeCsvCell(s.value)])
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n')
+    downloadBlob(`${assembly?.name || 'assembly'}_strings.csv`, csvContent, 'text/csv;charset=utf-8;')
+  }
+
+  const exportAssetsJson = () => {
+    const payload = {
+      assembly: assembly?.name || 'unknown',
+      totalResources: resources.length,
+      exportedAt: new Date().toISOString(),
+      resources: resources.map(r => ({
+        name: r.name,
+        sizeInBytes: r.sizeInBytes,
+        resourceType: r.resourceType,
+        mimeType: r.mimeType,
+        humanDescription: r.humanDescription
+      }))
+    }
+    downloadBlob(`${assembly?.name || 'assembly'}_resources.json`, JSON.stringify(payload, null, 2), 'application/json')
+  }
+
+  const exportAssetsCsv = () => {
+    const headers = ['Nome Risorsa', 'Tipo', 'Dimensione Bytes', 'MimeType', 'Descrizione']
+    const rows = resources.map(r => [
+      escapeCsvCell(r.name),
+      escapeCsvCell(r.resourceType || ''),
+      r.sizeInBytes,
+      escapeCsvCell(r.mimeType || ''),
+      escapeCsvCell(r.humanDescription || '')
+    ])
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n')
+    downloadBlob(`${assembly?.name || 'assembly'}_resources.csv`, csvContent, 'text/csv;charset=utf-8;')
+  }
+
   // Format dimensione byte in KB / MB
   const formatBytes = (bytes: number): string => {
     if (!bytes || bytes <= 0) return '0 Byte'
@@ -290,8 +363,30 @@ export const AssemblyInsightsDialog: React.FC<AssemblyInsightsDialogProps> = ({
           {/* TAB 2: ASSET GRAFICI E RISORSE */}
           {activeTab === 'assets' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, height: '100%' }}>
-              <div style={{ fontSize: '11px', color: '#444' }}>
-                Asset grafici, icone, file XML e risorse incorporate estratte direttamente dallo stream del binario.
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: '11px', color: '#444' }}>
+                  Asset grafici, icone, file XML e risorse incorporate estratte direttamente dallo stream del binario.
+                </div>
+                {resources.length > 0 && (
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button
+                      type="button"
+                      onClick={exportAssetsCsv}
+                      style={{ fontSize: '10px', padding: '2px 6px', cursor: 'pointer' }}
+                      title="Esporta elenco risorse in formato CSV"
+                    >
+                      Esporta CSV
+                    </button>
+                    <button
+                      type="button"
+                      onClick={exportAssetsJson}
+                      style={{ fontSize: '10px', padding: '2px 6px', cursor: 'pointer' }}
+                      title="Esporta elenco risorse in formato JSON"
+                    >
+                      Esporta JSON
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Galleria Visiva se sono presenti immagini */}
@@ -483,7 +578,7 @@ export const AssemblyInsightsDialog: React.FC<AssemblyInsightsDialogProps> = ({
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     placeholder="Cerca testo stringa..."
-                    style={{ fontSize: '11px', height: '22px', padding: '2px 6px', width: '180px' }}
+                    style={{ fontSize: '11px', height: '22px', padding: '2px 6px', width: '160px' }}
                   />
                   {searchQuery && (
                     <button
@@ -493,6 +588,26 @@ export const AssemblyInsightsDialog: React.FC<AssemblyInsightsDialogProps> = ({
                     >
                       X
                     </button>
+                  )}
+                  {filteredStrings.length > 0 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={exportStringsCsv}
+                        style={{ fontSize: '10px', height: '22px', padding: '0 6px', cursor: 'pointer' }}
+                        title="Esporta stringhe filtrate in CSV"
+                      >
+                        CSV
+                      </button>
+                      <button
+                        type="button"
+                        onClick={exportStringsJson}
+                        style={{ fontSize: '10px', height: '22px', padding: '0 6px', cursor: 'pointer' }}
+                        title="Esporta stringhe filtrate in JSON"
+                      >
+                        JSON
+                      </button>
+                    </>
                   )}
                 </div>
               </div>

@@ -12,6 +12,33 @@ interface OpenDialogProps {
   errorMessage: string | null
 }
 
+// Gestione cronologia percorsi recenti (MRU) salvati in localStorage
+function getRecentPaths(key: string): string[] {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(key) : null
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+function saveRecentPath(key: string, path: string) {
+  try {
+    if (typeof window === 'undefined' || !path.trim()) return
+    const current = getRecentPaths(key).filter(p => p.toLowerCase() !== path.trim().toLowerCase())
+    const updated = [path.trim(), ...current].slice(0, 5)
+    localStorage.setItem(key, JSON.stringify(updated))
+  } catch {}
+}
+
+function clearRecentPaths(key: string) {
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(key)
+    }
+  } catch {}
+}
+
 export const OpenDialog: React.FC<OpenDialogProps> = ({
   isOpen,
   onClose,
@@ -27,15 +54,31 @@ export const OpenDialog: React.FC<OpenDialogProps> = ({
   const [localPath, setLocalPath] = useState<string>('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
+  const [recentSolutions, setRecentSolutions] = useState<string[]>([])
+  const [recentFolders, setRecentFolders] = useState<string[]>([])
+  const [recentAssemblies, setRecentAssemblies] = useState<string[]>([])
+
   const [scanningFolder, setScanningFolder] = useState<boolean>(false)
   const [discoveredAssemblies, setDiscoveredAssemblies] = useState<DiscoveredAssemblyItem[]>([])
   const [selectedDiscoveredPath, setSelectedDiscoveredPath] = useState<string | null>(null)
   const [folderScanError, setFolderScanError] = useState<string | null>(null)
 
+  // Carica cronologia all'apertura del dialog
+  React.useEffect(() => {
+    if (isOpen) {
+      setRecentSolutions(getRecentPaths('dna_recent_solutions'))
+      setRecentFolders(getRecentPaths('dna_recent_folders'))
+      setRecentAssemblies(getRecentPaths('dna_recent_assemblies'))
+    }
+  }, [isOpen])
+
   if (!isOpen) return null
 
-  const handleScanFolder = async () => {
-    if (!folderPath.trim()) return
+  const handleScanFolder = async (folderToScan?: string) => {
+    const target = folderToScan || folderPath
+    if (!target.trim()) return
+    saveRecentPath('dna_recent_folders', target.trim())
+    setRecentFolders(getRecentPaths('dna_recent_folders'))
     setScanningFolder(true)
     setFolderScanError(null)
     setDiscoveredAssemblies([])
@@ -45,7 +88,7 @@ export const OpenDialog: React.FC<OpenDialogProps> = ({
       const response = await fetch('/api/assemblies/inspect-folder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folderPath: folderPath.trim() })
+        body: JSON.stringify({ folderPath: target.trim() })
       })
 
       if (!response.ok) {
@@ -69,17 +112,78 @@ export const OpenDialog: React.FC<OpenDialogProps> = ({
     e.preventDefault()
     if (activeTab === 'solution') {
       if (!solutionInputPath.trim() || !onInspectSolution) return
+      saveRecentPath('dna_recent_solutions', solutionInputPath.trim())
+      setRecentSolutions(getRecentPaths('dna_recent_solutions'))
       await onInspectSolution(solutionInputPath.trim())
     } else if (activeTab === 'folder') {
       if (!selectedDiscoveredPath) return
+      saveRecentPath('dna_recent_folders', folderPath.trim())
+      setRecentFolders(getRecentPaths('dna_recent_folders'))
       await onInspectPath(selectedDiscoveredPath)
     } else if (activeTab === 'path') {
       if (!localPath.trim()) return
+      saveRecentPath('dna_recent_assemblies', localPath.trim())
+      setRecentAssemblies(getRecentPaths('dna_recent_assemblies'))
       await onInspectPath(localPath.trim())
     } else {
       if (!selectedFile) return
       await onInspectFile(selectedFile)
     }
+  }
+
+  const renderRecentBadges = (
+    items: string[],
+    onSelect: (p: string) => void,
+    storageKey: string,
+    onClear: () => void
+  ) => {
+    if (items.length === 0) return null
+    return (
+      <div style={{ marginTop: 6, marginBottom: 8, fontSize: 11 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <span style={{ fontWeight: 'bold', color: '#555' }}>Percorsi Recenti:</span>
+          <button
+            type="button"
+            onClick={() => {
+              clearRecentPaths(storageKey)
+              onClear()
+            }}
+            style={{ fontSize: 9, padding: '1px 5px', cursor: 'pointer' }}
+            title="Cancella cronologia recente"
+          >
+            Azzera
+          </button>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+          {items.map((p, idx) => {
+            const parts = p.split(/[\\/]/)
+            const shortName = parts[parts.length - 1] || p
+            return (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => onSelect(p)}
+                title={p}
+                style={{
+                  fontSize: 10,
+                  padding: '2px 6px',
+                  background: '#f0f0f0',
+                  border: '1px solid #7f9db9',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  maxWidth: 280,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {shortName}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -139,7 +243,7 @@ export const OpenDialog: React.FC<OpenDialogProps> = ({
                     i moduli <strong>Database (DbContext, Repository, Stored Procedure)</strong>, i <strong>Processi Batch</strong> e
                     le dipendenze tra progetti.
                   </p>
-                  <div className="field-row-stacked" style={{ marginBottom: 12 }}>
+                  <div className="field-row-stacked" style={{ marginBottom: 6 }}>
                     <label htmlFor="solutionPathInput" style={{ fontWeight: 'bold' }}>
                       Percorso Solution (.sln) o Cartella Progetto:
                     </label>
@@ -153,6 +257,7 @@ export const OpenDialog: React.FC<OpenDialogProps> = ({
                       disabled={loading}
                     />
                   </div>
+                  {renderRecentBadges(recentSolutions, setSolutionInputPath, 'dna_recent_solutions', () => setRecentSolutions([]))}
                   <div style={{ backgroundColor: '#ffffe1', border: '1px solid #d4c88b', padding: '6px 8px', fontSize: 11, marginBottom: 8 }}>
                     <strong>Suggerimento:</strong> Puoi incollare direttamente la cartella principale del progetto. Se presente, il file .sln verrà rilevato automaticamente!
                   </div>
@@ -162,7 +267,7 @@ export const OpenDialog: React.FC<OpenDialogProps> = ({
                   <p style={{ margin: '0 0 8px 0' }}>
                     Inserisci il percorso della cartella del progetto contenente le DLL:
                   </p>
-                  <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
                     <input
                       id="folderPathInput"
                       type="text"
@@ -174,13 +279,14 @@ export const OpenDialog: React.FC<OpenDialogProps> = ({
                     />
                     <button
                       type="button"
-                      onClick={handleScanFolder}
+                      onClick={() => handleScanFolder()}
                       disabled={!folderPath.trim() || scanningFolder || loading}
                       style={{ minWidth: 110 }}
                     >
                       {scanningFolder ? 'Scansione...' : 'Cerca DLL'}
                     </button>
                   </div>
+                  {renderRecentBadges(recentFolders, (p) => { setFolderPath(p); handleScanFolder(p) }, 'dna_recent_folders', () => setRecentFolders([]))}
 
                   {folderScanError && (
                     <div style={{ color: '#b00000', marginBottom: 8, fontSize: 11 }}>
@@ -247,7 +353,7 @@ export const OpenDialog: React.FC<OpenDialogProps> = ({
                   <p style={{ margin: '0 0 8px 0' }}>
                     Inserisci il percorso assoluto della libreria o eseguibile .NET (.dll, .exe):
                   </p>
-                  <div className="field-row-stacked" style={{ marginBottom: 12 }}>
+                  <div className="field-row-stacked" style={{ marginBottom: 6 }}>
                     <label htmlFor="filePathInput">Percorso file:</label>
                     <input
                       id="filePathInput"
@@ -259,6 +365,7 @@ export const OpenDialog: React.FC<OpenDialogProps> = ({
                       disabled={loading}
                     />
                   </div>
+                  {renderRecentBadges(recentAssemblies, setLocalPath, 'dna_recent_assemblies', () => setRecentAssemblies([]))}
                 </div>
               ) : (
                 <div>

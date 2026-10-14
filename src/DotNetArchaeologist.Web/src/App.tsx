@@ -7,12 +7,6 @@ import { MetadataInspector } from './components/MetadataInspector'
 import { StatusBar } from './components/StatusBar'
 import { OpenDialog } from './components/OpenDialog'
 import { AboutDialog } from './components/AboutDialog'
-import { SolutionOverview } from './components/SolutionOverview'
-import { TechnicalDiagram } from './components/TechnicalDiagram'
-import { SystemSitemap360 } from './components/SystemSitemap360'
-import { ExecutiveReportView } from './components/ExecutiveReportView'
-import { GlobalSearchDialog } from './components/GlobalSearchDialog'
-import { AssemblyInsightsDialog } from './components/AssemblyInsightsDialog'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import {
   SitemapIcon,
@@ -23,6 +17,20 @@ import {
   SearchIcon
 } from './components/icons/RetroIcons'
 import type { AssemblyDescriptor, TreeNamespaceGroup, TypeInfo, SolutionDescriptor, ExecutiveReport } from './types/api'
+
+// Code-splitting asincrono per ottimizzazione del bundle iniziale
+const SolutionOverview = React.lazy(() => import('./components/SolutionOverview').then(m => ({ default: m.SolutionOverview })))
+const TechnicalDiagram = React.lazy(() => import('./components/TechnicalDiagram').then(m => ({ default: m.TechnicalDiagram })))
+const SystemSitemap360 = React.lazy(() => import('./components/SystemSitemap360').then(m => ({ default: m.SystemSitemap360 })))
+const ExecutiveReportView = React.lazy(() => import('./components/ExecutiveReportView').then(m => ({ default: m.ExecutiveReportView })))
+const GlobalSearchDialog = React.lazy(() => import('./components/GlobalSearchDialog').then(m => ({ default: m.GlobalSearchDialog })))
+const AssemblyInsightsDialog = React.lazy(() => import('./components/AssemblyInsightsDialog').then(m => ({ default: m.AssemblyInsightsDialog })))
+
+const ViewSuspenseFallback = () => (
+  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, color: '#000080', fontStyle: 'italic', fontSize: '12px' }}>
+    Caricamento modulo retro in corso...
+  </div>
+)
 
 export const App: React.FC = () => {
   const [solution, setSolution] = useState<SolutionDescriptor | null>(null)
@@ -440,98 +448,100 @@ export const App: React.FC = () => {
         )}
 
         <ErrorBoundary fallbackTitle=".NET Archaeologist - Errore Area di Lavoro" onReset={() => setViewMode(solution ? 'solution' : 'assembly')}>
-          {viewMode === 'report' ? (
-            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              <ExecutiveReportView
-                report={report}
-                loading={reportLoading}
-                onRefresh={handleGenerateReport}
-                onClose={() => setViewMode(solution ? 'solution' : 'assembly')}
-              />
-            </div>
-          ) : viewMode === 'solution' && solution ? (
-            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              <SolutionOverview
-                solution={solution}
-                onOpenAssemblyPath={async (asmPath) => {
-                  await handleInspectPath(asmPath)
-                  setViewMode('assembly')
-                }}
-                onClose={() => setViewMode('sitemap360')}
-              />
-            </div>
-          ) : viewMode === 'sitemap360' && solution ? (
-            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              <SystemSitemap360
-                solution={solution}
-                onOpenAssemblyPath={async (asmPath) => {
-                  await handleInspectPath(asmPath)
-                  setViewMode('assembly')
-                }}
-                onClose={() => setViewMode('solution')}
-              />
-            </div>
-          ) : viewMode === 'diagram' ? (
-            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              <TechnicalDiagram
-                solution={solution}
-                assembly={assembly}
-                sessionId={sessionId}
-                selectedTypeFullName={selectedTypeFullName}
-                onOpenAssemblyPath={async (asmPath) => {
-                  await handleInspectPath(asmPath)
-                  setViewMode('assembly')
-                }}
-                onSelectType={(type) => {
-                  handleSelectType(type)
-                  setViewMode('assembly')
-                }}
-                onClose={() => setViewMode(solution ? 'solution' : 'assembly')}
-              />
-            </div>
-          ) : (
-            <div className="workspace-split">
-              {/* Riquadro di sinistra: Navigazione ad albero */}
-              <div className="left-pane">
-                <ExplorerTree
-                  namespaces={namespaces}
-                  selectedTypeFullName={selectedTypeFullName}
-                  onSelectType={handleSelectType}
+          <React.Suspense fallback={<ViewSuspenseFallback />}>
+            {viewMode === 'report' ? (
+              <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <ExecutiveReportView
+                  report={report}
+                  loading={reportLoading}
+                  onRefresh={handleGenerateReport}
+                  onClose={() => setViewMode(solution ? 'solution' : 'assembly')}
                 />
               </div>
-
-              {/* Riquadro di destra: Decompilatore e Ispettore metadati */}
-              <div className="right-pane">
-                <div style={{ flex: 3, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                  <DecompilerView
-                    selectedType={selectedTypeFullName}
-                    code={decompiledCode}
-                    loading={decompileLoading}
-                    onDecompileWholeModule={assembly ? handleDecompileWholeModule : undefined}
+            ) : viewMode === 'solution' && solution ? (
+              <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <SolutionOverview
+                  solution={solution}
+                  onOpenAssemblyPath={async (asmPath) => {
+                    await handleInspectPath(asmPath)
+                    setViewMode('assembly')
+                  }}
+                  onClose={() => setViewMode('sitemap360')}
+                />
+              </div>
+            ) : viewMode === 'sitemap360' && solution ? (
+              <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <SystemSitemap360
+                  solution={solution}
+                  onOpenAssemblyPath={async (asmPath) => {
+                    await handleInspectPath(asmPath)
+                    setViewMode('assembly')
+                  }}
+                  onClose={() => setViewMode('solution')}
+                />
+              </div>
+            ) : viewMode === 'diagram' ? (
+              <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <TechnicalDiagram
+                  solution={solution}
+                  assembly={assembly}
+                  sessionId={sessionId}
+                  selectedTypeFullName={selectedTypeFullName}
+                  onOpenAssemblyPath={async (asmPath) => {
+                    await handleInspectPath(asmPath)
+                    setViewMode('assembly')
+                  }}
+                  onSelectType={(type) => {
+                    handleSelectType(type)
+                    setViewMode('assembly')
+                  }}
+                  onClose={() => setViewMode(solution ? 'solution' : 'assembly')}
+                />
+              </div>
+            ) : (
+              <div className="workspace-split">
+                {/* Riquadro di sinistra: Navigazione ad albero */}
+                <div className="left-pane">
+                  <ExplorerTree
+                    namespaces={namespaces}
+                    selectedTypeFullName={selectedTypeFullName}
+                    onSelectType={handleSelectType}
                   />
                 </div>
 
-                <div style={{ flex: 1.5, marginTop: 4, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                  <div className="window" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                    <div className="title-bar" style={{ height: 18, padding: '1px 3px' }}>
-                      <div className="title-bar-text" style={{ fontSize: 10 }}>Ispettore Metadati &amp; Gerarchia Figli</div>
-                    </div>
-                    <div className="window-body" style={{ flex: 1, margin: 0, padding: 0, overflowY: 'auto' }}>
-                      <MetadataInspector
-                        typeInfo={selectedTypeInfo}
-                        derivedTypes={derivedTypesForSelected}
-                        onSelectType={handleSelectType}
-                        onShowInGraph={(type) => {
-                          setSelectedTypeFullName(type)
-                          setViewMode('diagram')
-                        }}
-                      />
+                {/* Riquadro di destra: Decompilatore e Ispettore metadati */}
+                <div className="right-pane">
+                  <div style={{ flex: 3, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                    <DecompilerView
+                      selectedType={selectedTypeFullName}
+                      code={decompiledCode}
+                      loading={decompileLoading}
+                      onDecompileWholeModule={assembly ? handleDecompileWholeModule : undefined}
+                    />
+                  </div>
+
+                  <div style={{ flex: 1.5, marginTop: 4, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                    <div className="window" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                      <div className="title-bar" style={{ height: 18, padding: '1px 3px' }}>
+                        <div className="title-bar-text" style={{ fontSize: 10 }}>Ispettore Metadati &amp; Gerarchia Figli</div>
+                      </div>
+                      <div className="window-body" style={{ flex: 1, margin: 0, padding: 0, overflowY: 'auto' }}>
+                        <MetadataInspector
+                          typeInfo={selectedTypeInfo}
+                          derivedTypes={derivedTypesForSelected}
+                          onSelectType={handleSelectType}
+                          onShowInGraph={(type) => {
+                            setSelectedTypeFullName(type)
+                            setViewMode('diagram')
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </React.Suspense>
         </ErrorBoundary>
 
         <StatusBar
@@ -557,27 +567,33 @@ export const App: React.FC = () => {
         onClose={() => setIsAboutOpen(false)}
       />
 
-      <GlobalSearchDialog
-        isOpen={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-        solution={solution}
-        assembly={assembly}
-        namespaces={namespaces}
-        onSelectType={(fullName) => {
-          setViewMode('assembly')
-          handleSelectType(fullName)
-        }}
-        onOpenAssemblyPath={(path) => handleInspectPath(path)}
-        onOpenSitemap={() => setViewMode('sitemap360')}
-        onOpenSolution={() => setViewMode('solution')}
-        onOpenInsights={() => setIsInsightsOpen(true)}
-      />
+      <React.Suspense fallback={null}>
+        {isSearchOpen && (
+          <GlobalSearchDialog
+            isOpen={isSearchOpen}
+            onClose={() => setIsSearchOpen(false)}
+            solution={solution}
+            assembly={assembly}
+            namespaces={namespaces}
+            onSelectType={(fullName) => {
+              setViewMode('assembly')
+              handleSelectType(fullName)
+            }}
+            onOpenAssemblyPath={(path) => handleInspectPath(path)}
+            onOpenSitemap={() => setViewMode('sitemap360')}
+            onOpenSolution={() => setViewMode('solution')}
+            onOpenInsights={() => setIsInsightsOpen(true)}
+          />
+        )}
 
-      <AssemblyInsightsDialog
-        isOpen={isInsightsOpen}
-        onClose={() => setIsInsightsOpen(false)}
-        assembly={assembly}
-      />
+        {isInsightsOpen && (
+          <AssemblyInsightsDialog
+            isOpen={isInsightsOpen}
+            onClose={() => setIsInsightsOpen(false)}
+            assembly={assembly}
+          />
+        )}
+      </React.Suspense>
     </div>
   )
 }

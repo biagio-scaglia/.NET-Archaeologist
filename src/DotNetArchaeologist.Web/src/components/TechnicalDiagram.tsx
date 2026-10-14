@@ -1370,7 +1370,7 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
           <div
             style={{
               position: 'absolute',
-              right: selectedNode ? '312px' : '12px',
+              right: (showArchaeologistPanel || selectedNode || selectedEdge) ? '396px' : '16px',
               bottom: '12px',
               width: '150px',
               backgroundColor: '#dfdfdf',
@@ -1443,37 +1443,47 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
               boxShadow: '-2px 0 6px rgba(0,0,0,0.06)',
             }}
           >
-            {/* Titlebar Stile Windows Classica / Enterprise */}
+            {/* Titlebar Stile Windows Classica / Enterprise con pulsante X isolato */}
             <div
               style={{
                 background: 'linear-gradient(90deg, #0a246a 0%, #1084d0 100%)',
                 color: '#ffffff',
                 padding: '5px 8px',
                 fontWeight: 'bold',
-                marginBottom: '6px',
+                marginBottom: '4px',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 borderRadius: '3px',
                 boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 1px 2px rgba(0,0,0,0.15)',
+                minHeight: '26px',
+                boxSizing: 'border-box',
+                gap: '8px',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
-                <span style={{ fontSize: '12px' }}>🎙️</span>
-                <span style={{ fontSize: '11px', letterSpacing: '0.3px', textShadow: '0 1px 1px rgba(0,0,0,0.3)', whiteSpace: 'nowrap' }}>
-                  L'Archeologo Spiega &amp; Risponde
-                </span>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  minWidth: 0,
+                  flex: 1,
+                  overflow: 'hidden',
+                }}
+              >
+                <span style={{ fontSize: '12px', flexShrink: 0 }}>🎙️</span>
                 <span
                   style={{
-                    fontSize: '9px',
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    padding: '1px 5px',
-                    borderRadius: '2px',
-                    marginLeft: '2px',
+                    fontSize: '11px',
+                    letterSpacing: '0.3px',
+                    textShadow: '0 1px 1px rgba(0,0,0,0.3)',
                     whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
                   }}
+                  title="L'Archeologo Spiega &amp; Risponde"
                 >
-                  Dettaglio Componente CAD
+                  L'Archeologo Spiega &amp; Risponde
                 </span>
               </div>
               <button
@@ -1484,7 +1494,7 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                   setShowArchaeologistPanel(false)
                 }}
                 style={{
-                  padding: '1px 6px',
+                  padding: '2px 8px',
                   fontSize: '11px',
                   fontWeight: 'bold',
                   cursor: 'pointer',
@@ -1493,12 +1503,48 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                   color: '#ffffff',
                   border: '1px solid #991b1b',
                   borderRadius: '2px',
-                  lineHeight: '13px',
+                  lineHeight: '12px',
+                  height: '20px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
                 title="Chiudi pannello laterale"
               >
                 ✕
               </button>
+            </div>
+
+            {/* Sottotitolo e Riferimento Componente CAD separato (anti-sovrapposizione) */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                backgroundColor: '#ffffff',
+                border: '1px solid #cbd5e1',
+                borderRadius: '3px',
+                padding: '3px 8px',
+                fontSize: '9.5px',
+                marginBottom: '6px',
+                boxSizing: 'border-box',
+              }}
+            >
+              <span style={{ fontWeight: '600', color: '#002277' }}>
+                Dettaglio Componente CAD
+              </span>
+              <span
+                style={{
+                  fontSize: '8.5px',
+                  backgroundColor: '#e2e8f0',
+                  color: '#475569',
+                  padding: '1px 5px',
+                  borderRadius: '2px',
+                  fontWeight: 'bold',
+                }}
+              >
+                INSPECTOR
+              </span>
             </div>
 
             {/* Schede / Tab di Selezione */}

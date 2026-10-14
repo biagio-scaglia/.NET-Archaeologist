@@ -21,10 +21,12 @@ public sealed class InMemoryAssemblySessionStore : IAssemblySessionStore
         public required DateTimeOffset CreatedAt { get; init; }
         public DateTimeOffset LastAccessedAt { get; set; }
         public long SizeBytes => RawBytes.Length;
+        public Dictionary<string, string> DecompileCache { get; } = new(StringComparer.Ordinal);
     }
 
     private readonly object _syncLock = new();
     private readonly Dictionary<string, SessionRecord> _sessions = new(StringComparer.Ordinal);
+    private long _totalStoredBytes;
     private readonly AssemblySessionOptions _options;
     private readonly TimeProvider _timeProvider;
 
@@ -53,6 +55,7 @@ public sealed class InMemoryAssemblySessionStore : IAssemblySessionStore
 
     /// <summary>
     /// Dimensione totale aggregata in byte degli assembly attualmente memorizzati.
+    /// Accesso immediato O(1) senza allocazioni né scansioni.
     /// </summary>
     public long TotalStoredBytes
     {
@@ -61,7 +64,7 @@ public sealed class InMemoryAssemblySessionStore : IAssemblySessionStore
             lock (_syncLock)
             {
                 PurgeExpiredInternal(_timeProvider.GetUtcNow());
-                return _sessions.Values.Sum(s => s.SizeBytes);
+                return _totalStoredBytes;
             }
         }
     }
@@ -85,9 +88,8 @@ public sealed class InMemoryAssemblySessionStore : IAssemblySessionStore
                 EvictLeastRecentlyUsed();
             }
 
-            // 3. Se la dimensione aggregata supera il limite consentito, espelli finché non c'è spazio sufficiente
-            while (_sessions.Count > 0 &&
-                   (_sessions.Values.Sum(s => s.SizeBytes) + rawBytes.Length > _options.MaxTotalBytes))
+            // 3. Se la dimensione aggregata supera il limite consentito, espelli in O(1) finché non c'è spazio
+            while (_sessions.Count > 0 && (_totalStoredBytes + rawBytes.Length > _options.MaxTotalBytes))
             {
                 EvictLeastRecentlyUsed();
             }
@@ -102,6 +104,7 @@ public sealed class InMemoryAssemblySessionStore : IAssemblySessionStore
             };
 
             _sessions[sessionId] = record;
+            _totalStoredBytes += rawBytes.Length;
         }
 
         return sessionId;
@@ -125,7 +128,7 @@ public sealed class InMemoryAssemblySessionStore : IAssemblySessionStore
 
             if (IsExpired(record, now))
             {
-                _sessions.Remove(sessionId);
+                RemoveSessionInternal(sessionId, record);
                 return null;
             }
 
@@ -156,7 +159,7 @@ public sealed class InMemoryAssemblySessionStore : IAssemblySessionStore
 
             if (IsExpired(record, now))
             {
-                _sessions.Remove(sessionId);
+                RemoveSessionInternal(sessionId, record);
                 return null;
             }
 
@@ -166,6 +169,49 @@ public sealed class InMemoryAssemblySessionStore : IAssemblySessionStore
             }
 
             return new MemoryStream(record.RawBytes, writable: false);
+        }
+    }
+
+    public string? GetCachedDecompilation(string sessionId, string cacheKey)
+    {
+        if (string.IsNullOrWhiteSpace(sessionId) || string.IsNullOrWhiteSpace(cacheKey))
+        {
+            return null;
+        }
+
+        lock (_syncLock)
+        {
+            if (_sessions.TryGetValue(sessionId, out var record))
+            {
+                if (record.DecompileCache.TryGetValue(cacheKey, out var code))
+                {
+                    return code;
+                }
+            }
+
+            return null;
+        }
+    }
+
+    public void CacheDecompilation(string sessionId, string cacheKey, string code)
+    {
+        if (string.IsNullOrWhiteSpace(sessionId) || string.IsNullOrWhiteSpace(cacheKey) || code == null)
+        {
+            return;
+        }
+
+        lock (_syncLock)
+        {
+            if (_sessions.TryGetValue(sessionId, out var record))
+            {
+                // Limite massimo di 250 elementi decompilati in cache per sessione per preservare la RAM
+                if (record.DecompileCache.Count > 250)
+                {
+                    record.DecompileCache.Clear();
+                }
+
+                record.DecompileCache[cacheKey] = code;
+            }
         }
     }
 
@@ -183,17 +229,29 @@ public sealed class InMemoryAssemblySessionStore : IAssemblySessionStore
 
     private int PurgeExpiredInternal(DateTimeOffset now)
     {
-        var expiredKeys = _sessions.Values
-            .Where(s => IsExpired(s, now))
-            .Select(s => s.SessionId)
-            .ToList();
-
-        foreach (var key in expiredKeys)
+        var expiredList = new List<SessionRecord>();
+        foreach (var session in _sessions.Values)
         {
-            _sessions.Remove(key);
+            if (IsExpired(session, now))
+            {
+                expiredList.Add(session);
+            }
         }
 
-        return expiredKeys.Count;
+        foreach (var record in expiredList)
+        {
+            RemoveSessionInternal(record.SessionId, record);
+        }
+
+        return expiredList.Count;
+    }
+
+    private void RemoveSessionInternal(string sessionId, SessionRecord record)
+    {
+        if (_sessions.Remove(sessionId))
+        {
+            _totalStoredBytes = Math.Max(0, _totalStoredBytes - record.SizeBytes);
+        }
     }
 
     private bool IsExpired(SessionRecord record, DateTimeOffset now)
@@ -203,13 +261,18 @@ public sealed class InMemoryAssemblySessionStore : IAssemblySessionStore
 
     private void EvictLeastRecentlyUsed()
     {
-        var oldest = _sessions.Values
-            .OrderBy(s => s.LastAccessedAt)
-            .FirstOrDefault();
+        SessionRecord? oldest = null;
+        foreach (var record in _sessions.Values)
+        {
+            if (oldest == null || record.LastAccessedAt < oldest.LastAccessedAt)
+            {
+                oldest = record;
+            }
+        }
 
         if (oldest != null)
         {
-            _sessions.Remove(oldest.SessionId);
+            RemoveSessionInternal(oldest.SessionId, oldest);
         }
     }
 }

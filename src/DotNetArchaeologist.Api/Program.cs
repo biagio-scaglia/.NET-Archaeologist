@@ -312,6 +312,19 @@ app.MapGet("/api/assemblies/{sessionId}/decompile", async (
     IDecompilerService decompiler,
     CancellationToken ct) =>
 {
+    var cacheKey = $"type:{type ?? "<global>"}#method:{method ?? "<all>"}";
+    var cachedCode = sessionStore.GetCachedDecompilation(sessionId, cacheKey);
+    if (cachedCode != null)
+    {
+        return Results.Ok(new
+        {
+            sessionId,
+            type,
+            method,
+            code = cachedCode
+        });
+    }
+
     using var peStream = sessionStore.GetStream(sessionId);
     if (peStream == null)
     {
@@ -333,6 +346,8 @@ app.MapGet("/api/assemblies/{sessionId}/decompile", async (
         {
             csharpCode = await decompiler.DecompileWholeAssemblyAsync(peStream, ct);
         }
+
+        sessionStore.CacheDecompilation(sessionId, cacheKey, csharpCode);
 
         return Results.Ok(new
         {

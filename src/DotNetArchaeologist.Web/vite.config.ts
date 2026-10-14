@@ -18,7 +18,21 @@ export default defineConfig({
     }
   },
   build: {
-    cssMinify: false
+    cssMinify: false,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'vendor-react'
+            }
+          }
+          if (id.includes('theme') || id.includes('98.css') || id.includes('xp.css') || id.includes('7.css')) {
+            return 'retro-themes'
+          }
+        }
+      }
+    }
   },
   // @ts-ignore vitest config
   test: {

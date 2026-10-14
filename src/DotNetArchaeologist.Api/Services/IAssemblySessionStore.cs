@@ -22,4 +22,14 @@ public interface IAssemblySessionStore
     /// Restituisce uno stream di sola lettura posizionato all'inizio dei byte dell'assembly.
     /// </summary>
     Stream? GetStream(string sessionId);
+
+    /// <summary>
+    /// Recupera il sorgente decompilato dalla cache della sessione specificata se presente.
+    /// </summary>
+    string? GetCachedDecompilation(string sessionId, string cacheKey);
+
+    /// <summary>
+    /// Salva il codice C# decompilato nella cache della sessione.
+    /// </summary>
+    void CacheDecompilation(string sessionId, string cacheKey, string code);
 }

@@ -185,8 +185,27 @@ public sealed class CSharpDecompilerService : IDecompilerService
             throwOnError: false,
             targetFramework: targetFramework);
 
-        // Aggiunge percorsi noti per .NET Framework 4.x legacy di Windows se presenti
-        var knownFrameworkPaths = new[]
+        // Aggiunge percorsi noti per .NET Framework 4.x legacy di Windows se presenti (pre-verificati staticamente)
+        foreach (var path in ExistingFrameworkPaths)
+        {
+            try
+            {
+                resolver.AddSearchDirectory(path);
+            }
+            catch
+            {
+                // Ignora
+            }
+        }
+
+        return resolver;
+    }
+
+    private static readonly IReadOnlyList<string> ExistingFrameworkPaths = InitializeExistingFrameworkPaths();
+
+    private static IReadOnlyList<string> InitializeExistingFrameworkPaths()
+    {
+        var candidates = new[]
         {
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Microsoft.NET", "Framework", "v4.0.30319"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Microsoft.NET", "Framework64", "v4.0.30319"),
@@ -195,22 +214,23 @@ public sealed class CSharpDecompilerService : IDecompilerService
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Reference Assemblies", "Microsoft", "Framework", ".NETFramework", "v4.0")
         };
 
-        foreach (var path in knownFrameworkPaths)
+        var valid = new List<string>(candidates.Length);
+        foreach (var path in candidates)
         {
-            if (Directory.Exists(path))
+            try
             {
-                try
+                if (Directory.Exists(path))
                 {
-                    resolver.AddSearchDirectory(path);
+                    valid.Add(path);
                 }
-                catch
-                {
-                    // Ignora
-                }
+            }
+            catch
+            {
+                // Ignora
             }
         }
 
-        return resolver;
+        return valid;
     }
 
     private static TypeDefinitionHandle FindTypeDefinitionHandle(MetadataReader reader, string targetFullName)

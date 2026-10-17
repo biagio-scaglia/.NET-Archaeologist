@@ -136,6 +136,83 @@ body.theme-win7 button.active-view-tab {
   color: var(--retro-active-tab-text) !important;
 }
 
+/* Controlli finestra: disabilitazione pulsanti inattivi nella barra titolo */
+.title-bar-controls button:disabled {
+  opacity: 0.35;
+  cursor: default !important;
+  pointer-events: none;
+}
+
+/* Pulsanti puliti per azzerare filtri/input di ricerca */
+.btn-clear-search {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  height: 20px;
+  min-width: 20px;
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 1;
+  cursor: pointer;
+  background-color: var(--retro-surface);
+  border: 1px solid var(--retro-border);
+  color: #333;
+  border-radius: 2px;
+  transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+.btn-clear-search:hover {
+  background-color: var(--retro-hover-soft);
+  color: #000;
+}
+
+/* Pulsante retro secondario per chiusura viste e pannelli */
+.btn-retro-close {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  background-color: var(--retro-surface-light);
+  border: 1px solid var(--retro-border);
+  border-radius: 2px;
+  color: inherit;
+  transition: all 0.1s ease;
+}
+
+.btn-retro-close:hover {
+  background-color: var(--retro-hover-soft);
+  border-color: var(--retro-selection);
+}
+
+/* Pulsante compatto di chiusura drawer laterale o minimappe */
+.btn-drawer-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  flex-shrink: 0;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 2px;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-drawer-close:hover {
+  background-color: rgba(220, 38, 38, 0.85); /* Rosso armonioso e moderato solo in hover intenzionale */
+  border-color: #ef4444;
+  color: #ffffff;
+}
+
 /* Area principale divisa in pannelli */
 .workspace-split {
   flex: 1;

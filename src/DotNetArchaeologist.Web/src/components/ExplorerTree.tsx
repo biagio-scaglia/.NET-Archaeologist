@@ -167,18 +167,30 @@ export const ExplorerTree: React.FC<ExplorerTreeProps> = ({
         {searchTerm && (
           <button
             type="button"
+            className="btn-clear-search"
             onClick={() => setSearchTerm('')}
             title="Azzera filtro di ricerca"
-            style={{ padding: '0 5px', height: 21, cursor: 'pointer', fontWeight: 'bold' }}
           >
-            X
+            ✕
           </button>
         )}
-        <button type="button" onClick={expandAll} title="Espandi tutti i namespace" style={{ padding: '0 4px', height: 21, cursor: 'pointer' }}>
-          [+]
+        <button
+          type="button"
+          onClick={expandAll}
+          title="Espandi tutti i namespace"
+          className="btn-clear-search"
+          style={{ minWidth: 22, height: 20 }}
+        >
+          +
         </button>
-        <button type="button" onClick={collapseAll} title="Comprimi tutti i namespace" style={{ padding: '0 4px', height: 21, cursor: 'pointer' }}>
-          [-]
+        <button
+          type="button"
+          onClick={collapseAll}
+          title="Comprimi tutti i namespace"
+          className="btn-clear-search"
+          style={{ minWidth: 22, height: 20 }}
+        >
+          −
         </button>
       </div>
 

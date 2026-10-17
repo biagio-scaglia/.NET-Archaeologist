@@ -76,7 +76,8 @@ export const SolutionOverview: React.FC<SolutionOverviewProps> = ({
           <div>
             <button
               onClick={onClose}
-              style={{ padding: '2px 10px', fontSize: '11px', cursor: 'pointer' }}
+              className="btn-retro-close"
+              title="Chiudi Mappa Solution"
             >
               Chiudi Mappa
             </button>

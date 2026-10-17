@@ -179,7 +179,13 @@ export const ExecutiveReportView: React.FC<ExecutiveReportViewProps> = ({
             [Copia]
           </button>
           {onClose && (
-            <button type="button" onClick={onClose} style={{ marginLeft: '4px' }}>
+            <button
+              type="button"
+              className="btn-retro-close"
+              onClick={onClose}
+              style={{ marginLeft: '4px' }}
+              title="Chiudi Report Esecutivo"
+            >
               [Chiudi Report]
             </button>
           )}

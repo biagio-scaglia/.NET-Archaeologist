@@ -437,9 +437,10 @@ export const App: React.FC = () => {
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
               <button
                 type="button"
+                className="btn-retro-close"
                 onClick={() => setIsSearchOpen(true)}
                 title="Ricerca universale per classi, API, tabelle, entità e worker batch (Scorciatoia: Ctrl+K o F3)"
-                style={{ cursor: 'pointer', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                style={{ fontWeight: 'bold' }}
               >
                 <SearchIcon size={14} /> Cerca Tutto (Ctrl+K)
               </button>

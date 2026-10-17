@@ -253,7 +253,8 @@ export const SystemSitemap360: React.FC<SystemSitemap360Props> = ({
           </div>
           <button
             onClick={onClose}
-            style={{ padding: '2px 8px', fontWeight: 'bold', cursor: 'pointer' }}
+            className="btn-retro-close"
+            title="Chiudi Mappa 360°"
           >
             Chiudi Mappa
           </button>

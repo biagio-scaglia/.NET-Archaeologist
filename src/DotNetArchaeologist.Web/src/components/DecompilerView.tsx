@@ -87,11 +87,12 @@ export const DecompilerView: React.FC<DecompilerViewProps> = ({
               {codeFilter && (
                 <button
                   type="button"
+                  className="btn-clear-search"
                   onClick={() => setCodeFilter('')}
                   title="Azzera ricerca codice"
-                  style={{ height: 20, padding: '0 4px', fontSize: '10px', cursor: 'pointer' }}
+                  style={{ height: 20, minWidth: 20, padding: 0 }}
                 >
-                  X
+                  ✕
                 </button>
               )}
               {codeFilter && (

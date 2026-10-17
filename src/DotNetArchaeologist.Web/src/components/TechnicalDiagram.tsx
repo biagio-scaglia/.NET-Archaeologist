@@ -966,8 +966,18 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSelectFirstMatch()}
-              style={{ fontSize: '11px', width: '120px', padding: '2px 5px', border: '1px solid #7f9db9', borderRadius: '2px', backgroundColor: '#fff' }}
+              style={{ fontSize: '11px', width: '120px', padding: '2px 5px', border: '1px solid var(--retro-border)', borderRadius: '2px', backgroundColor: '#fff' }}
             />
+            {searchQuery && (
+              <button
+                type="button"
+                className="btn-clear-search"
+                onClick={() => setSearchQuery('')}
+                title="Azzera ricerca"
+              >
+                ✕
+              </button>
+            )}
             {searchQuery && (
               <span style={{ fontSize: '10px', color: searchMatches.length > 0 ? '#006600' : '#880000', fontWeight: 'bold' }}>
                 ({searchMatches.length})
@@ -977,7 +987,8 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
 
           <button
             onClick={() => setZoom(z => Math.max(0.4, Number((z - 0.15).toFixed(2))))}
-            style={{ padding: '2px 6px', fontSize: '11px', cursor: 'pointer', border: '1px solid #7f9db9', borderRadius: '2px', backgroundColor: '#fff' }}
+            className="btn-retro-close"
+            style={{ padding: '2px 6px' }}
           >
             [-] Zoom
           </button>
@@ -986,20 +997,24 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
           </span>
           <button
             onClick={() => setZoom(z => Math.min(2.5, Number((z + 0.15).toFixed(2))))}
-            style={{ padding: '2px 6px', fontSize: '11px', cursor: 'pointer', border: '1px solid #7f9db9', borderRadius: '2px', backgroundColor: '#fff' }}
+            className="btn-retro-close"
+            style={{ padding: '2px 6px' }}
           >
             [+] Zoom
           </button>
           <button
             onClick={() => setZoom(1)}
-            style={{ padding: '2px 6px', fontSize: '11px', cursor: 'pointer', border: '1px solid #7f9db9', borderRadius: '2px', backgroundColor: '#fff' }}
+            className="btn-retro-close"
+            style={{ padding: '2px 6px' }}
           >
             1:1 Reset
           </button>
           {onClose && (
             <button
               onClick={onClose}
-              style={{ padding: '2px 8px', fontSize: '11px', cursor: 'pointer', marginLeft: '4px', border: '1px solid #7f9db9', borderRadius: '2px', backgroundColor: '#fff' }}
+              className="btn-retro-close"
+              style={{ marginLeft: '4px', fontWeight: 'bold' }}
+              title="Chiudi disegno tecnico"
             >
               Chiudi
             </button>
@@ -1383,24 +1398,23 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
             }}
           >
             <div
+              className="title-bar"
               style={{
-                backgroundColor: '#000080',
-                color: '#fff',
                 padding: '2px 4px',
-                fontSize: '9px',
-                fontWeight: 'bold',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
+                fontSize: '10px',
+                marginBottom: 0
               }}
             >
-              <span>Minimappa CAD</span>
-              <button
-                onClick={() => setShowMinimap(false)}
-                style={{ padding: '0 2px', fontSize: '8px', cursor: 'pointer', height: '12px', lineHeight: '10px' }}
-              >
-                x
-              </button>
+              <div className="title-bar-text">Minimappa CAD</div>
+              <div className="title-bar-controls">
+                <button
+                  type="button"
+                  aria-label="Close"
+                  onClick={() => setShowMinimap(false)}
+                  title="Chiudi minimappa"
+                  style={{ cursor: 'pointer' }}
+                />
+              </div>
             </div>
             <div style={{ padding: '4px', backgroundColor: '#e6eaee', position: 'relative', height: '90px' }}>
               <svg width="100%" height="100%" viewBox={`0 0 ${canvasBounds.width} ${canvasBounds.height}`}>
@@ -1443,76 +1457,37 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
               boxShadow: '-2px 0 6px rgba(0,0,0,0.06)',
             }}
           >
-            {/* Titlebar Stile Windows Classica / Enterprise con pulsante X isolato */}
-            <div
-              style={{
-                background: 'linear-gradient(90deg, #0a246a 0%, #1084d0 100%)',
-                color: '#ffffff',
-                padding: '5px 8px',
-                fontWeight: 'bold',
-                marginBottom: '4px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                borderRadius: '3px',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 1px 2px rgba(0,0,0,0.15)',
-                minHeight: '26px',
-                boxSizing: 'border-box',
-                gap: '8px',
-              }}
-            >
+            {/* Titlebar Stile OS Retro con pulsante di chiusura nativo armonizzato */}
+            <div className="title-bar" style={{ marginBottom: '6px' }}>
               <div
+                className="title-bar-text"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
-                  minWidth: 0,
-                  flex: 1,
                   overflow: 'hidden',
+                  whiteSpace: 'nowrap',
+                  textOverflow: 'ellipsis'
                 }}
               >
                 <span style={{ fontSize: '12px', flexShrink: 0 }}>🎙️</span>
-                <span
-                  style={{
-                    fontSize: '11px',
-                    letterSpacing: '0.3px',
-                    textShadow: '0 1px 1px rgba(0,0,0,0.3)',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                  title="L'Archeologo Spiega &amp; Risponde"
-                >
+                <span title="L'Archeologo Spiega &amp; Risponde">
                   L'Archeologo Spiega &amp; Risponde
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedNodeId(null)
-                  setSelectedEdge(null)
-                  setShowArchaeologistPanel(false)
-                }}
-                style={{
-                  padding: '2px 8px',
-                  fontSize: '11px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                  backgroundColor: '#dc2626',
-                  color: '#ffffff',
-                  border: '1px solid #991b1b',
-                  borderRadius: '2px',
-                  lineHeight: '12px',
-                  height: '20px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-                title="Chiudi pannello laterale"
-              >
-                ✕
-              </button>
+              <div className="title-bar-controls">
+                <button
+                  type="button"
+                  aria-label="Close"
+                  onClick={() => {
+                    setSelectedNodeId(null)
+                    setSelectedEdge(null)
+                    setShowArchaeologistPanel(false)
+                  }}
+                  title="Chiudi pannello laterale"
+                  style={{ cursor: 'pointer' }}
+                />
+              </div>
             </div>
 
             {/* Sottotitolo e Riferimento Componente CAD separato (anti-sovrapposizione) */}
@@ -1552,17 +1527,16 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveSideTab('archaeologist')}
+                className={activeSideTab === 'archaeologist' ? 'active-view-tab' : ''}
                 style={{
                   flex: 1,
-                  fontWeight: activeSideTab === 'archaeologist' ? 'bold' : 'normal',
-                  backgroundColor: activeSideTab === 'archaeologist' ? '#ffffff' : '#e2e8f0',
-                  color: activeSideTab === 'archaeologist' ? '#002277' : '#334155',
-                  border: '1px solid #cbd5e1',
-                  borderRadius: '3px',
                   padding: '4px 6px',
                   cursor: 'pointer',
                   fontSize: '10.5px',
-                  boxShadow: activeSideTab === 'archaeologist' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px'
                 }}
               >
                 🎙️ Spiegazione Parlata
@@ -1571,17 +1545,16 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveSideTab('specs')}
+                  className={activeSideTab === 'specs' ? 'active-view-tab' : ''}
                   style={{
                     flex: 1,
-                    fontWeight: activeSideTab === 'specs' ? 'bold' : 'normal',
-                    backgroundColor: activeSideTab === 'specs' ? '#ffffff' : '#e2e8f0',
-                    color: activeSideTab === 'specs' ? '#002277' : '#334155',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '3px',
                     padding: '4px 6px',
                     cursor: 'pointer',
                     fontSize: '10.5px',
-                    boxShadow: activeSideTab === 'specs' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px'
                   }}
                 >
                   📐 Specifiche CAD
@@ -1596,7 +1569,7 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                 <div
                   style={{
                     backgroundColor: '#ffffff',
-                    border: '1px solid #cbd5e1',
+                    border: '1px solid var(--retro-border-light)',
                     borderRadius: '3px',
                     padding: '6px 8px',
                     display: 'flex',
@@ -1642,15 +1615,11 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                         setSelectedNodeId(null)
                         setSelectedEdge(null)
                       }}
+                      className="btn-retro-close"
                       style={{
                         fontSize: '10px',
-                        fontWeight: '600',
-                        padding: '3px 8px',
-                        cursor: 'pointer',
+                        padding: '2px 6px',
                         flexShrink: 0,
-                        backgroundColor: '#f8fafc',
-                        border: '1px solid #94a3b8',
-                        borderRadius: '3px',
                       }}
                     >
                       [Mappa Globale]

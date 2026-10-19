@@ -282,3 +282,40 @@ export interface ExecutiveReport {
   modernizationRoadmap: ModernizationStep[]
   markdownContent: string
 }
+
+export interface ArchaeologistChatMessage {
+  role: 'user' | 'assistant' | 'system'
+  content: string
+}
+
+export interface ArchaeologistChatRequest {
+  prompt: string
+  context?: string | null
+  solutionName?: string | null
+  assemblyName?: string | null
+  selectedNodeTitle?: string | null
+  selectedNodeCategory?: string | null
+  codeSnippet?: string | null
+  modelOverride?: string | null
+  baseUrlOverride?: string | null
+  apiKeyOverride?: string | null
+  history?: ArchaeologistChatMessage[] | null
+}
+
+export interface ArchaeologistChatResponse {
+  success: boolean
+  answer: string
+  modelUsed: string
+  provider: string
+  diagnosticMessage?: string | null
+  fallbackUsed: boolean
+}
+
+export interface ArchaeologistStatusResponse {
+  provider: string
+  baseUrl: string
+  model: string
+  hasApiKey: boolean
+  isConfigured: boolean
+}
+

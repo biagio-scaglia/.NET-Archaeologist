@@ -45,6 +45,7 @@ builder.Services.AddSingleton<IDecompilerService, CSharpDecompilerService>();
 builder.Services.AddSingleton<IArchitectureGraphBuilder, ArchitectureGraphBuilder>();
 builder.Services.AddSingleton<ISolutionInspector, SolutionInspector>();
 builder.Services.AddSingleton<IExecutiveReportGenerator, ExecutiveReportGenerator>();
+builder.Services.AddSingleton<IEvidenceBundleService, EvidenceBundleService>();
 builder.Services.AddSingleton<IAssemblySessionStore, InMemoryAssemblySessionStore>();
 
 // Registrazione del servizio AI dell'Archeologo (Ollama / Cloud)
@@ -453,6 +454,85 @@ app.MapGet("/api/assemblies/{sessionId}/report", (
 });
 
 // ==============================================================================
+// Interoperabilità REA: Evidence Bundles (Milestone 5)
+// ==============================================================================
+
+// Esportazione Evidence Bundle per Assembly in sessione
+app.MapGet("/api/assemblies/{sessionId}/evidence-bundle", (
+    string sessionId,
+    IAssemblySessionStore sessionStore,
+    IArchitectureGraphBuilder graphBuilder,
+    IExecutiveReportGenerator reportGenerator,
+    IEvidenceBundleService bundleService) =>
+{
+    var descriptor = sessionStore.GetDescriptor(sessionId);
+    if (descriptor == null)
+    {
+        return Results.NotFound(new { error = $"Sessione assembly '{sessionId}' non trovata." });
+    }
+
+    var graph = graphBuilder.BuildGraph(descriptor, new ArchitectureGraphOptions());
+    var report = reportGenerator.GenerateReport(descriptor);
+    byte[]? binaryBytes = null;
+    using (var stream = sessionStore.GetStream(sessionId))
+    {
+        if (stream is MemoryStream ms)
+        {
+            binaryBytes = ms.ToArray();
+        }
+    }
+
+    var bundle = bundleService.CreateFromAssembly(descriptor, graph, report, binaryBytes);
+    return Results.Ok(bundle);
+});
+
+// Esportazione Evidence Bundle per Solution (.sln)
+app.MapPost("/api/solution/evidence-bundle", async (
+    InspectSolutionRequest request,
+    ISolutionInspector solutionInspector,
+    IExecutiveReportGenerator reportGenerator,
+    IEvidenceBundleService bundleService,
+    CancellationToken ct) =>
+{
+    var validation = LocalPathSecurityValidator.ValidateSolutionOrFolderPath(request.SolutionOrFolderPath);
+    if (!validation.IsValid)
+    {
+        return Results.Json(new { error = validation.ErrorMessage }, statusCode: validation.StatusCode);
+    }
+
+    var validatedPath = validation.NormalizedPath!;
+
+    try
+    {
+        var solution = await solutionInspector.InspectSolutionAsync(validatedPath, ct);
+        var report = reportGenerator.GenerateReport(solution);
+        var bundle = bundleService.CreateFromSolution(solution, report);
+        return Results.Ok(bundle);
+    }
+    catch (FileNotFoundException ex)
+    {
+        return Results.NotFound(new { error = ex.Message });
+    }
+    catch (UnauthorizedAccessException)
+    {
+        return Results.Json(new { error = $"Accesso negato: '{validatedPath}'." }, statusCode: StatusCodes.Status403Forbidden);
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { error = $"Errore durante la generazione dell'Evidence Bundle della solution: {ex.Message}" });
+    }
+});
+
+// Validazione e ispezione passiva a Zero-Execution di un Evidence Bundle JSON esistente
+app.MapPost("/api/evidence-bundle/validate", (
+    ValidateEvidenceBundleRequest request,
+    IEvidenceBundleService bundleService) =>
+{
+    var result = bundleService.ValidateAndRead(request.BundleJson);
+    return Results.Ok(result);
+});
+
+// ==============================================================================
 // Consulente AI: L'Archeologo Live (Ollama Cloud / Locale)
 // ==============================================================================
 
@@ -495,3 +575,6 @@ public sealed record DiscoveredAssemblyItem(
     string Version,
     int TypesCount,
     long SizeBytes);
+
+public sealed record ValidateEvidenceBundleRequest(string BundleJson);
+

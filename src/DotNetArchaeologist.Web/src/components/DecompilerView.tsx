@@ -5,13 +5,15 @@ interface DecompilerViewProps {
   code: string
   loading: boolean
   onDecompileWholeModule?: () => void
+  onAskAiAboutCode?: (codeSnippet: string) => void
 }
 
 export const DecompilerView: React.FC<DecompilerViewProps> = ({
   selectedType,
   code,
   loading,
-  onDecompileWholeModule
+  onDecompileWholeModule,
+  onAskAiAboutCode
 }) => {
   const codeRef = useRef<HTMLPreElement>(null)
   const [copySuccess, setCopySuccess] = useState(false)
@@ -133,6 +135,28 @@ export const DecompilerView: React.FC<DecompilerViewProps> = ({
           >
             # Linee
           </button>
+
+          {onAskAiAboutCode && code && (
+            <button
+              type="button"
+              onClick={() => onAskAiAboutCode(code)}
+              disabled={loading}
+              title="Chiedi all'Archeologo AI di analizzare questo codice e suggerire refactoring verso C# moderno"
+              style={{
+                height: 21,
+                fontSize: '10px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                color: '#002277',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 3
+              }}
+            >
+              <span>🏛️</span>
+              <span>Spiega con AI</span>
+            </button>
+          )}
 
           {onDecompileWholeModule && (
             <button

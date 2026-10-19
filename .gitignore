@@ -34,7 +34,10 @@ dist-ssr/
 # File di ambiente e credenziali (Privacy-first)
 .env
 .env.*
+**/.env
+**/.env.*
 !.env.example
+!**/.env.example
 *.pem
 *.key
 *.pfx
@@ -72,3 +75,4 @@ desktop.ini
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+

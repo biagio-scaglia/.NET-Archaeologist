@@ -27,6 +27,7 @@ const ExecutiveReportView = React.lazy(() => import('./components/ExecutiveRepor
 const GlobalSearchDialog = React.lazy(() => import('./components/GlobalSearchDialog').then(m => ({ default: m.GlobalSearchDialog })))
 const AssemblyInsightsDialog = React.lazy(() => import('./components/AssemblyInsightsDialog').then(m => ({ default: m.AssemblyInsightsDialog })))
 const ArchaeologistAiDialog = React.lazy(() => import('./components/ArchaeologistAiDialog').then(m => ({ default: m.ArchaeologistAiDialog })))
+const EvidenceBundleDialog = React.lazy(() => import('./components/EvidenceBundleDialog').then(m => ({ default: m.EvidenceBundleDialog })))
 
 const ViewSuspenseFallback = () => (
   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, color: '#000080', fontStyle: 'italic', fontSize: '12px' }}>
@@ -53,6 +54,7 @@ export const App: React.FC = () => {
   const [isInsightsOpen, setIsInsightsOpen] = useState<boolean>(false)
   const [isAboutOpen, setIsAboutOpen] = useState<boolean>(false)
   const [isAiDialogOpen, setIsAiDialogOpen] = useState<boolean>(false)
+  const [isEvidenceBundleOpen, setIsEvidenceBundleOpen] = useState<boolean>(false)
   const [aiInitialPrompt, setAiInitialPrompt] = useState<string | null>(null)
   const [aiStatus, setAiStatus] = useState<ArchaeologistStatusResponse | null>(null)
   const [statusMessage, setStatusMessage] = useState<string>('Pronto')
@@ -392,6 +394,7 @@ export const App: React.FC = () => {
             setAiInitialPrompt(null)
             setIsAiDialogOpen(true)
           }}
+          onEvidenceBundleClick={() => setIsEvidenceBundleOpen(true)}
         />
 
         {(solution || assembly) && (
@@ -661,6 +664,16 @@ export const App: React.FC = () => {
             selectedTypeFullName={selectedTypeFullName}
             codeSnippet={decompiledCode ? decompiledCode.slice(0, 3000) : undefined}
             initialPrompt={aiInitialPrompt}
+          />
+        )}
+
+        {isEvidenceBundleOpen && (
+          <EvidenceBundleDialog
+            isOpen={isEvidenceBundleOpen}
+            onClose={() => setIsEvidenceBundleOpen(false)}
+            currentSessionId={sessionId}
+            currentSolutionPath={solution?.solutionPath}
+            targetName={solution?.name || assembly?.name}
           />
         )}
       </React.Suspense>

@@ -9,6 +9,7 @@ interface MenuBarProps {
   onSearchClick?: () => void
   onInsightsClick?: () => void
   onAiConsultantClick?: () => void
+  onEvidenceBundleClick?: () => void
 }
 
 export const MenuBar: React.FC<MenuBarProps> = ({
@@ -17,7 +18,8 @@ export const MenuBar: React.FC<MenuBarProps> = ({
   onAboutClick,
   onSearchClick,
   onInsightsClick,
-  onAiConsultantClick
+  onAiConsultantClick,
+  onEvidenceBundleClick
 }) => {
   const { theme, setTheme } = useRetroTheme()
 
@@ -43,6 +45,12 @@ export const MenuBar: React.FC<MenuBarProps> = ({
         <div className="menu-item" onClick={onAiConsultantClick} title="Interpella il consulente AI L'Archeologo (F2)" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
           <span>🏛️</span>
           <span><u>A</u>rcheologo AI... (F2)</span>
+        </div>
+      )}
+      {onEvidenceBundleClick && (
+        <div className="menu-item" onClick={onEvidenceBundleClick} title="Fascicolo evidenze e interscambio REA (Evidence Bundle)" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <span>📦</span>
+          <span><u>E</u>videnze REA...</span>
         </div>
       )}
       <div className="menu-item" onClick={onResetClick}>

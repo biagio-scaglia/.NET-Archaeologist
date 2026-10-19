@@ -319,3 +319,35 @@ export interface ArchaeologistStatusResponse {
   isConfigured: boolean
 }
 
+export interface EvidenceRecord {
+  evidenceId: string
+  category: string
+  title: string
+  description: string
+  subject: string
+  confidence: number
+  timestampUtc: string
+  attributes?: Record<string, unknown>
+}
+
+export interface EvidenceBundle {
+  format: string
+  version: string
+  bundleId: string
+  targetName: string
+  targetSha256: string
+  targetKind: 'Assembly' | 'Solution' | string
+  createdAtUtc: string
+  summary: string
+  records: EvidenceRecord[]
+  metadata: Record<string, string>
+}
+
+export interface EvidenceBundleValidationResult {
+  isValid: boolean
+  errorMessage?: string | null
+  bundle?: EvidenceBundle | null
+  recordCount: number
+}
+
+

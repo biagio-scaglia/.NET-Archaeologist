@@ -59,8 +59,13 @@ Nello sviluppo di .NET Archaeologist:
 - [x] Redazione delle linee guida operative e della roadmap di sviluppo (Milestone 0).
 - [x] Creazione della Solution .NET e del Core Metadata Engine (Milestone 1).
 - [x] Decompilazione C# tramite ILSpy e API locale ASP.NET Core (Milestone 2).
-- [x] Frontend SPA in React + TypeScript con interfaccia 98.css (Milestone 3).
-- [ ] Grafo architetturale interattivo con React Flow (Milestone 4).
+- [x] Frontend SPA in React + TypeScript con interfaccia retro 98.css / xp.css / 7.css (Milestone 3).
+- [x] Mappatura automatica di Solution .NET (.sln) e identificazione ruoli (Milestone 3.5).
+- [x] Disegno Tecnico CAD Blueprint e Grafo Dipendenze con Minimappa (Milestone 4).
+- [x] Generatore di Report Esecutivi in linguaggio naturale, export PDF A4 e Markdown (Milestone 5).
+- [x] Consulente architetturale live "L'Archeologo AI" con supporto Ollama Cloud/Locale e fallback euristico (Milestone 5).
+- [ ] Esportazione / importazione Evidence Bundles REA (Milestone 5).
+- [ ] Persistenza e sessioni locali SQLite (Milestone 6).
  
 Consulta [docs/ROADMAP.md](docs/ROADMAP.md) per il piano dettagliato delle prossime fasi.
 

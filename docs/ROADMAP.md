@@ -165,6 +165,8 @@ Questo documento definisce le milestone di sviluppo di **.NET Archaeologist**, o
 - [x] Generatore di report tecnici esecutivi in linguaggio naturale con calcolo del debito architetturale (`ExecutiveReportGenerator`).
 - [x] Endpoint API dedicati `POST /api/solution/report` e `GET /api/assemblies/{sessionId}/report`.
 - [x] Interfaccia frontend per visualizzazione documento, stampa/salvataggio PDF nativo (A4 print-ready) e download Markdown (`.md`).
+- [x] Modulo di consulenza live "L'Archeologo AI" con supporto Ollama Cloud e locale, prompt engineering specializzato e fallback deterministico esperto (`ArchaeologistAiService`).
+- [x] Integrazione UI dell'Archeologo AI: finestra di dialogo retro (`ArchaeologistAiDialog`), console interattiva nella sidebar del diagramma tecnico CAD e pulsante di spiegazione codice nel decompilatore C#.
 - [ ] Supporto all'esportazione/importazione di *Evidence Bundles* compatibili con il protocollo di reverse engineering assistito (REA).
 - [ ] Documentazione su come condurre audit di sicurezza o analisi di debito tecnico tramite i report generati.
 

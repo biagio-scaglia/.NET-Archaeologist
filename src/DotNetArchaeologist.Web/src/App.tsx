@@ -16,7 +16,8 @@ import {
   ReportIcon,
   SearchIcon
 } from './components/icons/RetroIcons'
-import type { AssemblyDescriptor, TreeNamespaceGroup, TypeInfo, SolutionDescriptor, ExecutiveReport } from './types/api'
+import type { AssemblyDescriptor, TreeNamespaceGroup, TypeInfo, SolutionDescriptor, ExecutiveReport, ArchaeologistStatusResponse } from './types/api'
+import { getArchaeologistStatus } from './services/archaeologistAi'
 
 // Code-splitting asincrono per ottimizzazione del bundle iniziale
 const SolutionOverview = React.lazy(() => import('./components/SolutionOverview').then(m => ({ default: m.SolutionOverview })))
@@ -25,6 +26,7 @@ const SystemSitemap360 = React.lazy(() => import('./components/SystemSitemap360'
 const ExecutiveReportView = React.lazy(() => import('./components/ExecutiveReportView').then(m => ({ default: m.ExecutiveReportView })))
 const GlobalSearchDialog = React.lazy(() => import('./components/GlobalSearchDialog').then(m => ({ default: m.GlobalSearchDialog })))
 const AssemblyInsightsDialog = React.lazy(() => import('./components/AssemblyInsightsDialog').then(m => ({ default: m.AssemblyInsightsDialog })))
+const ArchaeologistAiDialog = React.lazy(() => import('./components/ArchaeologistAiDialog').then(m => ({ default: m.ArchaeologistAiDialog })))
 
 const ViewSuspenseFallback = () => (
   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, color: '#000080', fontStyle: 'italic', fontSize: '12px' }}>
@@ -50,15 +52,27 @@ export const App: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false)
   const [isInsightsOpen, setIsInsightsOpen] = useState<boolean>(false)
   const [isAboutOpen, setIsAboutOpen] = useState<boolean>(false)
+  const [isAiDialogOpen, setIsAiDialogOpen] = useState<boolean>(false)
+  const [aiInitialPrompt, setAiInitialPrompt] = useState<string | null>(null)
+  const [aiStatus, setAiStatus] = useState<ArchaeologistStatusResponse | null>(null)
   const [statusMessage, setStatusMessage] = useState<string>('Pronto')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  // Scorciatoia globale per Trova/Cerca (Ctrl+K o F3) e Stringhe/Modernizzazione (F4)
+  // Recupera lo stato della connessione AI dell'Archeologo all'avvio
+  React.useEffect(() => {
+    getArchaeologistStatus().then(setAiStatus).catch(() => {})
+  }, [])
+
+  // Scorciatoia globale per Trova/Cerca (Ctrl+K o F3), AI (F2) e Stringhe/Modernizzazione (F4)
   React.useEffect(() => {
     const handleGlobalKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         setIsSearchOpen(prev => !prev)
+      } else if (e.key === 'F2') {
+        e.preventDefault()
+        setAiInitialPrompt(null)
+        setIsAiDialogOpen(prev => !prev)
       } else if (e.key === 'F3') {
         e.preventDefault()
         setIsSearchOpen(true)
@@ -374,6 +388,10 @@ export const App: React.FC = () => {
           onAboutClick={() => setIsAboutOpen(true)}
           onSearchClick={() => setIsSearchOpen(true)}
           onInsightsClick={assembly ? () => setIsInsightsOpen(true) : undefined}
+          onAiConsultantClick={() => {
+            setAiInitialPrompt(null)
+            setIsAiDialogOpen(true)
+          }}
         />
 
         {(solution || assembly) && (
@@ -405,6 +423,26 @@ export const App: React.FC = () => {
               onClick={() => setViewMode('diagram')}
             >
               <BlueprintIcon size={14} /> Disegno Tecnico (Blueprint)
+            </button>
+            <button
+              type="button"
+              style={{
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                marginLeft: 'auto',
+                color: '#002277',
+                fontWeight: 'bold',
+                backgroundColor: isAiDialogOpen ? '#e0f2fe' : undefined
+              }}
+              onClick={() => {
+                setAiInitialPrompt(null)
+                setIsAiDialogOpen(true)
+              }}
+              title="Apri console di consulenza live L'Archeologo AI (F2)"
+            >
+              <span>🏛️</span> L'Archeologo AI (F2)
             </button>
             {assembly && (
               <>
@@ -497,6 +535,10 @@ export const App: React.FC = () => {
                     setViewMode('assembly')
                   }}
                   onClose={() => setViewMode(solution ? 'solution' : 'assembly')}
+                  onOpenAiConsultant={(initialPrompt) => {
+                    setAiInitialPrompt(initialPrompt ?? null)
+                    setIsAiDialogOpen(true)
+                  }}
                 />
               </div>
             ) : (
@@ -518,6 +560,10 @@ export const App: React.FC = () => {
                       code={decompiledCode}
                       loading={decompileLoading}
                       onDecompileWholeModule={assembly ? handleDecompileWholeModule : undefined}
+                      onAskAiAboutCode={(snippet) => {
+                        setAiInitialPrompt(`Analizza questo codice C# decompilato:\n\`\`\`csharp\n${snippet.slice(0, 2000)}\n\`\`\`\nQuali opportunità di modernizzazione verso C# 12 e .NET 8 suggerisci?`)
+                        setIsAiDialogOpen(true)
+                      }}
                     />
                   </div>
 
@@ -550,6 +596,17 @@ export const App: React.FC = () => {
           assemblyInfo={assembly ? `${assembly.name} [${assembly.targetFramework || 'CLI'}]` : undefined}
           typesCount={assembly?.totalTypesCount}
           selectedItem={selectedTypeFullName || undefined}
+          aiStatusText={
+            aiStatus
+              ? aiStatus.hasApiKey
+                ? `AI: ${aiStatus.model} (Online)`
+                : 'AI: Locale / Offline'
+              : 'AI: Connessione...'
+          }
+          onAiClick={() => {
+            setAiInitialPrompt(null)
+            setIsAiDialogOpen(true)
+          }}
         />
       </div>
 
@@ -592,6 +649,18 @@ export const App: React.FC = () => {
             isOpen={isInsightsOpen}
             onClose={() => setIsInsightsOpen(false)}
             assembly={assembly}
+          />
+        )}
+
+        {isAiDialogOpen && (
+          <ArchaeologistAiDialog
+            isOpen={isAiDialogOpen}
+            onClose={() => setIsAiDialogOpen(false)}
+            solution={solution}
+            assembly={assembly}
+            selectedTypeFullName={selectedTypeFullName}
+            codeSnippet={decompiledCode ? decompiledCode.slice(0, 3000) : undefined}
+            initialPrompt={aiInitialPrompt}
           />
         )}
       </React.Suspense>

@@ -8,6 +8,7 @@ interface MenuBarProps {
   onAboutClick: () => void
   onSearchClick?: () => void
   onInsightsClick?: () => void
+  onAiConsultantClick?: () => void
 }
 
 export const MenuBar: React.FC<MenuBarProps> = ({
@@ -15,7 +16,8 @@ export const MenuBar: React.FC<MenuBarProps> = ({
   onResetClick,
   onAboutClick,
   onSearchClick,
-  onInsightsClick
+  onInsightsClick,
+  onAiConsultantClick
 }) => {
   const { theme, setTheme } = useRetroTheme()
 
@@ -35,6 +37,12 @@ export const MenuBar: React.FC<MenuBarProps> = ({
         <div className="menu-item" onClick={onInsightsClick} title="Ispezione stringhe costanti, risorse incorporate e audit modernizzazione (F4)" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
           <StringConstantIcon size={13} />
           <span><u>S</u>tringhe &amp; Modernizzazione (F4)</span>
+        </div>
+      )}
+      {onAiConsultantClick && (
+        <div className="menu-item" onClick={onAiConsultantClick} title="Interpella il consulente AI L'Archeologo (F2)" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <span>🏛️</span>
+          <span><u>A</u>rcheologo AI... (F2)</span>
         </div>
       )}
       <div className="menu-item" onClick={onResetClick}>

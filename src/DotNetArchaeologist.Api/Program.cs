@@ -47,6 +47,11 @@ builder.Services.AddSingleton<ISolutionInspector, SolutionInspector>();
 builder.Services.AddSingleton<IExecutiveReportGenerator, ExecutiveReportGenerator>();
 builder.Services.AddSingleton<IAssemblySessionStore, InMemoryAssemblySessionStore>();
 
+// Registrazione del servizio AI dell'Archeologo (Ollama / Cloud)
+builder.Services.Configure<ArchaeologistAiOptions>(
+    builder.Configuration.GetSection(ArchaeologistAiOptions.SectionName));
+builder.Services.AddHttpClient<IArchaeologistAiService, ArchaeologistAiService>();
+
 // Configurazione serializzazione JSON HTTP (converte gli enum in stringhe descrittive)
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -445,6 +450,31 @@ app.MapGet("/api/assemblies/{sessionId}/report", (
 
     var report = reportGenerator.GenerateReport(descriptor);
     return Results.Ok(report);
+});
+
+// ==============================================================================
+// Consulente AI: L'Archeologo Live (Ollama Cloud / Locale)
+// ==============================================================================
+
+// Stato della connessione AI dell'Archeologo
+app.MapGet("/api/archaeologist/status", (IArchaeologistAiService aiService) =>
+{
+    return Results.Ok(aiService.GetStatus());
+});
+
+// Interpella L'Archeologo AI con contesto architetturale
+app.MapPost("/api/archaeologist/ask", async (
+    ArchaeologistChatRequest request,
+    IArchaeologistAiService aiService,
+    CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Prompt))
+    {
+        return Results.BadRequest(new { error = "Il prompt della domanda non può essere vuoto." });
+    }
+
+    var response = await aiService.AskAsync(request, ct);
+    return Results.Ok(response);
 });
 
 app.Run();

@@ -5,6 +5,7 @@ import type {
   ArchitectureGraphDto,
 } from '../types/api'
 import { narrateArchitectureConnections } from '../utils/architectureNarrator'
+import { askArchaeologist } from '../services/archaeologistAi'
 
 interface TechnicalDiagramProps {
   solution: SolutionDescriptor | null
@@ -14,6 +15,7 @@ interface TechnicalDiagramProps {
   onOpenAssemblyPath: (assemblyPath: string) => void
   onSelectType?: (typeFullName: string) => void
   onClose?: () => void
+  onOpenAiConsultant?: (initialPrompt?: string) => void
 }
 
 interface DiagramNode {
@@ -167,6 +169,7 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
   onOpenAssemblyPath,
   onSelectType,
   onClose,
+  onOpenAiConsultant,
 }) => {
   const [zoom, setZoom] = useState<number>(1)
   const [filter, setFilter] = useState<LayerFilter>('all')
@@ -182,7 +185,19 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
   const [backendGraph, setBackendGraph] = useState<ArchitectureGraphDto | null>(null)
   const [graphLoading, setGraphLoading] = useState<boolean>(false)
 
+  // Stati per la consulenza AI live nel diagramma CAD
+  const [aiCustomQuery, setAiCustomQuery] = useState<string>('')
+  const [aiAnswer, setAiAnswer] = useState<string | null>(null)
+  const [aiModelUsed, setAiModelUsed] = useState<string | null>(null)
+  const [aiLoading, setAiLoading] = useState<boolean>(false)
+
   const canvasScrollRef = useRef<HTMLDivElement>(null)
+
+  // Reset risposta AI quando cambia la selezione
+  useEffect(() => {
+    setAiAnswer(null)
+    setAiCustomQuery('')
+  }, [selectedNodeId, selectedEdge])
 
   // Caricamento del grafo architetturale remoto se sessionId è disponibile
   useEffect(() => {
@@ -702,6 +717,27 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
       solution
     )
   }, [nodes, edges, selectedNode, selectedEdge, solution])
+
+  const handleAiQuery = async (queryText: string) => {
+    if (!queryText.trim() || aiLoading) return
+    setAiLoading(true)
+    try {
+      const resp = await askArchaeologist({
+        prompt: queryText,
+        solutionName: solution?.name,
+        assemblyName: assembly?.name,
+        selectedNodeTitle: selectedNode?.title,
+        selectedNodeCategory: selectedNode?.category,
+        context: narration.walkthrough
+      })
+      setAiAnswer(resp.answer)
+      setAiModelUsed(resp.modelUsed)
+    } catch (err: any) {
+      setAiAnswer(`Errore durante l'interrogazione: ${err.message}`)
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   // Calcolo dinamico dell'area canvas in base alla posizione reale di TUTTI i nodi
   const canvasBounds = useMemo(() => {
@@ -1858,6 +1894,144 @@ export const TechnicalDiagram: React.FC<TechnicalDiagramProps> = ({
                     </div>
                   </fieldset>
                 )}
+
+                {/* 🏛️ Live Archaeologist AI Consultation in Diagram */}
+                <fieldset
+                  style={{
+                    margin: '6px 0 0 0',
+                    padding: '8px',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #94a3b8',
+                    borderTop: '2px solid #002277',
+                    borderRadius: '3px',
+                  }}
+                >
+                  <legend style={{ fontWeight: 'bold', color: '#002277', padding: '0 4px', fontSize: '10.5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span>🏛️</span>
+                    <span>Interpella L'Archeologo Live (AI)</span>
+                  </legend>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {/* Prompt suggestions chips */}
+                    <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        disabled={aiLoading}
+                        onClick={() => {
+                          const target = selectedNode ? selectedNode.title : 'questa architettura'
+                          const q = `Quali sono i rischi e gli accoppiamenti critici su ${target}?`
+                          setAiCustomQuery(q)
+                          handleAiQuery(q)
+                        }}
+                        style={{ fontSize: '9.5px', padding: '1px 5px', cursor: 'pointer' }}
+                      >
+                        ⚡ Rischi &amp; Accoppiamento
+                      </button>
+                      <button
+                        type="button"
+                        disabled={aiLoading}
+                        onClick={() => {
+                          const target = selectedNode ? selectedNode.title : 'questo sistema'
+                          const q = `Come migrare e modernizzare ${target} verso .NET 8 e C# moderno?`
+                          setAiCustomQuery(q)
+                          handleAiQuery(q)
+                        }}
+                        style={{ fontSize: '9.5px', padding: '1px 5px', cursor: 'pointer' }}
+                      >
+                        🚀 Migrazione .NET 8
+                      </button>
+                    </div>
+
+                    {/* Query Input */}
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <input
+                        type="text"
+                        value={aiCustomQuery}
+                        onChange={e => setAiCustomQuery(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            handleAiQuery(aiCustomQuery)
+                          }
+                        }}
+                        placeholder="Fai una domanda architetturale specifica..."
+                        style={{
+                          flex: 1,
+                          fontSize: '10px',
+                          padding: '3px 6px',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: '2px',
+                        }}
+                      />
+                      <button
+                        type="button"
+                        disabled={aiLoading || !aiCustomQuery.trim()}
+                        onClick={() => handleAiQuery(aiCustomQuery)}
+                        style={{
+                          fontSize: '10px',
+                          padding: '3px 8px',
+                          fontWeight: 'bold',
+                          cursor: aiLoading || !aiCustomQuery.trim() ? 'not-allowed' : 'pointer',
+                          backgroundColor: '#002277',
+                          color: '#ffffff',
+                          border: '1px solid #001144',
+                        }}
+                      >
+                        {aiLoading ? '...' : 'Chiedi ➔'}
+                      </button>
+                    </div>
+
+                    {/* AI Loading state */}
+                    {aiLoading && (
+                      <div style={{ fontSize: '10px', color: '#002277', fontStyle: 'italic', padding: '4px 0' }}>
+                        ⏳ L'Archeologo sta elaborando l'analisi...
+                      </div>
+                    )}
+
+                    {/* AI Answer display */}
+                    {aiAnswer && (
+                      <div
+                        style={{
+                          backgroundColor: '#f8fafc',
+                          border: '1px solid #bfdbfe',
+                          borderLeft: '3px solid #2563eb',
+                          borderRadius: '3px',
+                          padding: '6px 8px',
+                          fontSize: '10.5px',
+                          lineHeight: '1.5',
+                          whiteSpace: 'pre-line',
+                          color: '#1e293b',
+                          maxHeight: '180px',
+                          overflowY: 'auto',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', borderBottom: '1px solid #e2e8f0', paddingBottom: '2px' }}>
+                          <span style={{ fontWeight: 'bold', color: '#1e40af', fontSize: '9.5px' }}>
+                            Risposta Archeologo ({aiModelUsed || 'AI'}):
+                          </span>
+                          {onOpenAiConsultant && (
+                            <button
+                              type="button"
+                              onClick={() => onOpenAiConsultant(aiCustomQuery)}
+                              style={{
+                                fontSize: '9px',
+                                border: 'none',
+                                background: 'none',
+                                color: '#0284c7',
+                                cursor: 'pointer',
+                                textDecoration: 'underline',
+                                padding: 0,
+                              }}
+                            >
+                              [Apri in chat completa]
+                            </button>
+                          )}
+                        </div>
+                        {aiAnswer}
+                      </div>
+                    )}
+                  </div>
+                </fieldset>
 
                 {/* Pulsanti Rapidi di Decompilazione se nodo selezionato */}
                 {selectedNode?.assemblyPath && (

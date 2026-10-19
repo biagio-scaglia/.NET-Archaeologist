@@ -159,7 +159,7 @@ Questo documento definisce le milestone di sviluppo di **.NET Archaeologist**, o
 
 ---
 
-## Milestone 5: Esportazione Report & Integrazione Evidenze REA (Stato: In Corso)
+## Milestone 5: Esportazione Report & Integrazione Evidenze REA (Stato: Completata)
 **Obiettivo**: Fornire reportistica avanzata ed esportazione dei risultati per flussi assistiti da agenti AI.
 
 - [x] Generatore di report tecnici esecutivi in linguaggio naturale con calcolo del debito architetturale (`ExecutiveReportGenerator`).
@@ -167,11 +167,12 @@ Questo documento definisce le milestone di sviluppo di **.NET Archaeologist**, o
 - [x] Interfaccia frontend per visualizzazione documento, stampa/salvataggio PDF nativo (A4 print-ready) e download Markdown (`.md`).
 - [x] Modulo di consulenza live "L'Archeologo AI" con supporto Ollama Cloud e locale, prompt engineering specializzato e fallback deterministico esperto (`ArchaeologistAiService`).
 - [x] Integrazione UI dell'Archeologo AI: finestra di dialogo retro (`ArchaeologistAiDialog`), console interattiva nella sidebar del diagramma tecnico CAD e pulsante di spiegazione codice nel decompilatore C#.
-- [ ] Supporto all'esportazione/importazione di *Evidence Bundles* compatibili con il protocollo di reverse engineering assistito (REA).
-- [ ] Documentazione su come condurre audit di sicurezza o analisi di debito tecnico tramite i report generati.
+- [x] Supporto all'esportazione/importazione di *Evidence Bundles* compatibili con il protocollo di reverse engineering assistito (REA) (`EvidenceBundleService`, ID canonici `ev_[a-f0-9]{64}`).
+- [x] Documentazione su come condurre audit di sicurezza o analisi di debito tecnico tramite i report e i fascicoli evidenze (`docs/EVIDENCE_BUNDLES_REA.md`).
 
 **Criteri di verifica**:
 - Il report Markdown e la stampa PDF sono immediatamente consultabili, validi sintatticamente e completi di sintesi narrativa e piani di modernizzazione.
+- I fascicoli Evidence Bundle sono convalidati a Zero-Execution e compatibili con gli standard di interscambio REA.
 
 ---
 

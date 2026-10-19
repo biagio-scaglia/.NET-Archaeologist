@@ -64,7 +64,7 @@ Nello sviluppo di .NET Archaeologist:
 - [x] Disegno Tecnico CAD Blueprint e Grafo Dipendenze con Minimappa (Milestone 4).
 - [x] Generatore di Report Esecutivi in linguaggio naturale, export PDF A4 e Markdown (Milestone 5).
 - [x] Consulente architetturale live "L'Archeologo AI" con supporto Ollama Cloud/Locale e fallback euristico (Milestone 5).
-- [ ] Esportazione / importazione Evidence Bundles REA (Milestone 5).
+- [x] Esportazione / importazione Evidence Bundles REA (Milestone 5).
 - [ ] Persistenza e sessioni locali SQLite (Milestone 6).
  
 Consulta [docs/ROADMAP.md](docs/ROADMAP.md) per il piano dettagliato delle prossime fasi.
@@ -75,6 +75,7 @@ Consulta [docs/ROADMAP.md](docs/ROADMAP.md) per il piano dettagliato delle pross
 
 - [Architettura del Sistema](docs/ARCHITETTURA.md): Principi di design, separazione delle responsabilita e contratti.
 - [Guida allo Sviluppo](docs/SVILUPPO.md): Prerequisiti, convenzioni e configurazione dell'ambiente.
+- [Interoperabilita Evidence Bundles REA](docs/EVIDENCE_BUNDLES_REA.md): Formato JSON di interscambio e identificatori canonici REA.
 - [Roadmap di Progetto](docs/ROADMAP.md): Milestone ordinate e verificabili.
 - [Convenzioni per Agenti AI](AGENTS.md): Regole operative per l'assistenza allo sviluppo con agenti autonomi.
 
